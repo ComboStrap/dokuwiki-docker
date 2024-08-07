@@ -1,0 +1,104 @@
+# https://www.dokuwiki.org/install:caddy
+
+# public
+:80 {
+
+    # Root of the server (added to all relative path)
+    # https://caddyserver.com/docs/caddyfile/directives/root
+    root * /var/www/html
+
+    # Response encoding
+    encode gzip zstd
+
+    # serves static files
+    file_server
+
+    #############################
+    # Handle dokuwiki request (forbidden and rewrite)
+    #############################
+    # The route block wrap the directives to ensure that they are executed in order
+    # https://caddyserver.com/docs/caddyfile/directives/route
+    route {
+
+        # Forbidden Path
+        @forbidden {
+            path /data/* /conf/* /bin/* /inc/*
+        }
+        handle @forbidden {
+            respond * 403
+        }
+
+        # Rewrite
+        # https://www.dokuwiki.org/rewrite
+        handle_path /_media/* {
+            rewrite * /lib/exe/fetch.php?media={path}&{query}
+        }
+        handle_path /_detail/* {
+            rewrite * /lib/exe/detail.php?media={path}&{query}
+        }
+        handle /_export/* {
+            @export path_regexp export ^/_export/([^/]+)/(.*)
+            rewrite @export /doku.php?do=export_{re.export.1}&{query}&id={re.export.2}
+        }
+
+        # Rewrite to doku.php
+        handle / {
+            rewrite * /doku.php?{query}
+        }
+
+        # If the request does not match any file at path,
+        # rewrite to the doku.php entrypoint
+        # Match php-fpm requests
+        # match requests WITH NEITHER where
+        # - a file that does not exists
+        # - or a path that does not start with php-fpm
+        # https://caddyserver.com/docs/caddyfile/matchers#not
+        @default-rewrite {
+           not file
+           not path /php-fpm/*
+        }
+        rewrite @default-rewrite /doku.php?id={path}&{query}
+
+    }
+
+    ####################
+    # Handle php-fpm ping and status
+    ####################
+    route {
+
+        # Localhost only
+        @localhost {
+            remote_ip 127.0.0.1 ::1
+        }
+        handle @localhost {
+          # php-fpm status available only locally
+          # env are passed to php
+          # see https://www.php.net/manual/en/reserved.variables.server.php
+          # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+          # and we don't get a not found
+          reverse_proxy /php-fpm/status 127.0.0.1:9000 {
+              transport fastcgi {
+                  env SCRIPT_NAME {path}
+              }
+          }
+        }
+
+        # php-fpm ping - available publicly
+        # env are passed to php
+        # see https://www.php.net/manual/en/reserved.variables.server.php
+        # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+        reverse_proxy /php-fpm/ping 127.0.0.1:9000 {
+              transport fastcgi {
+                  env SCRIPT_NAME {path}
+              }
+        }
+    }
+
+    ###############
+    # Default
+    ###############
+    # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
+    # handles PHP files using FastCGI
+    php_fastcgi 127.0.0.1:9000
+
+}
