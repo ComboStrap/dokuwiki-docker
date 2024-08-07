@@ -7,11 +7,11 @@ set -e
 VERSION=2024-02-06b-php8.3-v1
 
 # Build or exit
-docker build . -t combo/dokuwiki:"$VERSION" # || exit 1
+docker build . -t ghcr.io/combostrap/dokuwiki:"$VERSION" # || exit 1
+
 
 # Run
-# docker run --name dokuwiki -p 8080:80 --rm combo/dokuwiki:2024-02-06b-php8.3-v1
+# docker run --name dokuwiki -p 8080:80 --rm ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
 
 # Push
-# docker push gerardnico/dokuwiki:"$VERSION"
-# docker push gerardnico/dokuwiki:2024-02-06b-v1
+# docker push ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1

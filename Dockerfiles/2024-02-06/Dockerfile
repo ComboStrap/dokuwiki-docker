@@ -3,6 +3,11 @@
 # Dockerfile: https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/Dockerfile
 FROM php:8.3-fpm-bookworm
 
+# Label
+# https://docs.docker.com/reference/dockerfile/#label
+LABEL org.opencontainers.image.source="https://github.com/combostrap/dokuwiki-docker"
+LABEL org.opencontainers.image.description="Dokuwiki in Docker"
+
 # Packages
 # Update is needed to locate packages
 # Otherwise we get `Unable to locate package xxx`
