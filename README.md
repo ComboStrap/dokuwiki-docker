@@ -6,11 +6,15 @@ This repository contains `Dokuwiki in Docker` images.
 
 ## Run
 
+Choose:
+* a [tag](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki/versions) 
+* and mount a volume at `/var/www/html`
+
 ```bash
 docker run \
   --name dokuwiki \
-  --v
-   
+  --v /var/www/html \
+  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
 ```
 
 ## Tag
