@@ -33,25 +33,15 @@ CMD ["supervisord", "-c", "/supervisord.conf"]
 # Dokuwiki
 ####################################
 # https://www.dokuwiki.org/install
-RUN apt-get install -y wget \
+# Download dokuwiki locally to copy it if not present on the mounted volume
+WORKDIR /var/www/dokuwiki
+RUN mkdir -p /var/www/dokuwiki \
+    && apt-get install -y wget unzip \
     && wget https://download.dokuwiki.org/src/dokuwiki/dokuwiki-2024-02-06b.tgz -O dokuwiki.tgz \
-    && tar -xzf dokuwiki.tgz --strip-components=1 \
-    && rm dokuwiki.tgz
-
-# Plugin
-# We install them by default to have a stable environment, delete them if disabled
-# Install SQLite Plugin
-RUN apt-get install -y unzip \
     && wget https://github.com/cosmocode/sqlite/archive/refs/heads/master.zip -O sqlite.zip \
-    && unzip sqlite.zip -d lib/plugins \
-    && mv lib/plugins/sqlite-master lib/plugins/sqlite \
-    && rm sqlite.zip
-
-# Install Combo Plugin
-RUN wget https://github.com/ComboStrap/combo/archive/refs/heads/main.zip -O combo.zip \
-    && unzip combo.zip -d lib/plugins \
-    && mv lib/plugins/combo-main lib/plugins/combo \
-    && rm combo.zip
+    && wget https://github.com/ComboStrap/combo/archive/refs/heads/main.zip -O combo.zip
+# Returns to the default working directory
+WORKDIR /var/www/html
 
 ####################################
 # Php FPM

@@ -47,15 +47,28 @@ fi
 #############
 export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 
-################
-# Combo Plugin
-# Built-in Plugins are deleted and not installed to have a stable environment
-# If there is no network, a plugin installation may fail
-################
-if [[ ! -d /var/www/html/lib/plugins/combo ]] && [[ "${DOKU_DOCKER_COMBO_ENABLE}" == "false" ]]; then
+#############
+# Dokuwiki
+#############
+if [[ ! -f /var/www/html/doku.php ]]; then
 
-    # Delete Combo
-    rm -rf lib/plugins/sqlite && rm -rf lib/plugins/combo
+    # Install is done by unarchiving, not downloading to avoid network problem, not copying to avoid a lot of IO
+    # The location of the archive
+    ARCHIVE_DIR=/var/www/dokuwiki
+
+    # Installation
+    echo "Dokuwiki not installed, installing ..."
+    echo "Installing Dokuwiki ..."
+    tar -xzf $ARCHIVE_DIR/dokuwiki.tgz --strip-components=1
+
+    if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
+      echo "Installing Sqlite Plugin ..."
+      unzip $ARCHIVE_DIR/sqlite.zip -d lib/plugins && mv lib/plugins/sqlite-master lib/plugins/sqlite
+      echo "Installing Combo Plugin ..."
+      unzip $ARCHIVE_DIR/combo.zip -d lib/plugins && mv lib/plugins/combo-main lib/plugins/combo
+    else
+      echo "Combo Plugin not enabled, skipping installation"
+    fi
 
 fi
 

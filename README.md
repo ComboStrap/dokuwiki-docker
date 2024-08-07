@@ -10,10 +10,22 @@ Choose:
 * a [tag](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki/versions) 
 * and mount a volume at `/var/www/html`
 
+* Linux
 ```bash
 docker run \
   --name dokuwiki \
-  --v /var/www/html \
+  --rm \
+  -p 8080:80 \
+  -v /tmp/doku/:var/www/html \
+  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
+```
+* Cygwin
+```bash
+docker run \
+  --name dokuwiki \
+  --rm \
+  -p 8080:80 \
+  -v 'c:\temp\dokuwiki':/var/www/html \
   ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
 ```
 
