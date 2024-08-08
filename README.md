@@ -2,12 +2,31 @@
 
 
 ## About
-This repository contains `Dokuwiki in Docker` images.
+This repository contains ready `Dokuwiki in Docker` images.
 
-## Run
+Get a dokuwiki app with docker in a single line of command.
 
-Mount a [volume](#volume-content) at `/var/www/html`
+Example: Linux/Cygwin
+```bash
+docker run \
+  --name dokuwiki \
+  --rm \
+  -p 8080:80 \
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
+```
 
+On a desktop, you could now configure the wiki at http://localhost:8080/install.php
+
+## Docker Volume Parameter
+
+The important run parameter is the [volume](#volume-content) to keep
+your data between restart.
+
+Note: If the [volume](#volume-content) is empty, after the run, it will be filled
+with a new dokuwiki installation. 
+You need to use the [DokuWiki's installer](https://www.dokuwiki.org/installer) to configure it.
+
+Example:
 * Linux
 ```bash
 docker run \
@@ -15,75 +34,32 @@ docker run \
   --rm \
   -p 8080:80 \
   -v /tmp/doku/:var/www/html \
-  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
-* Cygwin
+* Cygwin (Windows Bash)
 ```bash
 docker run \
   --name dokuwiki \
   --rm \
   -p 8080:80 \
   -v 'c:\temp\dokuwiki':/var/www/html \
-  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
-
-## Tag
-
-### Syntax
-
-A tag has the syntax
-```bash
-phpX.X-fpm-vX
-# example
-php8.3-fpm-v1
-```
-where:
-  * `phpX.X-fpm` is the base php version used
-  * `vX` is the version of this image
-  
-Dokuwiki is installed if not found on the volume. 
-See [how to choose the installed dokuwiki version](#choose-the-installed-version)
-
-### Components
-
-All image contains:
-* php-fpm and opcache for performance
-* caddy as webserver
-
-### Tag List
-
-  * [2024-02-06b-php8.3-v1](Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
+On a desktop:
+* Dokuwiki would be available at: http://localhost:8080
+* and the installer at: http://localhost:8080/install.php
 
 
-## Configuration
-
-### Disable Automatic Combo Installation
-
-By default, this image will [install the Combo plugin](https://combostrap.com/get-started/how-to-install-combo-zzjmtimy) automatically. 
-To disable this behavior, you need to set the `DOKU_DOCKER_COMBO_ENABLE` environment variable.
-
-```bash
-docker run -e DOKU_DOCKER_COMBO_ENABLE=false
-```
-
-### Set in dev mode
-
-By default, this image will run php in production mode.
-You can set it in dev mode via the `DOKU_DOCKER_ENV`
-
-```bash
-docker run -e DOKU_DOCKER_ENV=dev
-```
 
 ## How to
 
-### Choose the installed version
+### Choose the installed dokuwiki version
 
-You can choose the initial [version](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki/versions) 
+You can choose the initial [version](https://github.com/dokuwiki/dokuwiki/releases) 
 to install via the `DOKUWIKI_VERSION` environment.
 
-Example:
+Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
 ```bash
 docker run \
   --name dokuwiki \
@@ -94,14 +70,19 @@ docker run \
   ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
 ```
 
-### Check if alive (health)
+### Check if php-fpm is alive (health)
 
 `php-fpm` has a [configuration](resources/php-fpm/www.conf) `ping.path` set to `/ping`.
 The response is given by the configuration `ping.response`.
 
 Example: `http://localhost/php-fpm/ping`
 
-### Monitor with Status
+### Check if dokuwiki is alive (health)
+
+
+Example: `http://localhost/health.php`
+
+### Monitor php-fpm with status
 
 `php-fpm` has a [configuration](resources/php-fpm/www.conf) `pm.status_path` set to `/status`.
 
@@ -133,6 +114,26 @@ last request memory:  0
 
 For the documentation over the data and usage, see the [configuration file](resources/php-fpm/www.conf)
 
+### Disable Automatic Combo Installation
+
+By default, this image will [install the Combo plugin](https://combostrap.com/get-started/how-to-install-combo-zzjmtimy)
+automatically.
+
+To disable this behavior, you need to set the `DOKU_DOCKER_COMBO_ENABLE` environment variable.
+
+```bash
+docker run -e DOKU_DOCKER_COMBO_ENABLE=false
+```
+
+### Set in dev mode
+
+By default, this image will run php in production mode.
+You can set it in dev mode via the `DOKU_DOCKER_ENV`
+
+```bash
+docker run -e DOKU_DOCKER_ENV=dev
+```
+
 ## Volume Content
 
 The volume contains a whole dokuwiki installation.
@@ -144,9 +145,38 @@ because it's too damn hard to keep the state of an installation.
 * You then need to back up the `lib` directory that contains the most code.
 * Configuration file may be located into plugin/template (ie style.ini)
 * Identification file are co-located with configuration file in the `conf` directory.
-* Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp) 
+* Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp)
 
 If you want to keep the size low, you need to perform cleanup administrative task.
+
+
+## Tag
+
+### Syntax
+
+A tag has the syntax
+```bash
+phpX.X-vX
+# example
+php8.3-v1
+```
+where:
+* `phpX.X` is the php version used
+* `vX` is the version of this image
+
+Dokuwiki is installed if not found on the volume.
+See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwiki-version)
+
+### Components
+
+All image contains:
+* php-fpm and opcache for performance
+* caddy as webserver
+
+### Tag List
+
+* [php8.3-v1](Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
+
 
 ## Other related projects
 
