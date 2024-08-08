@@ -4,4 +4,3 @@
  * settings that should not be overwritten in the docker environment
  * https://www.dokuwiki.org/config:savedir
  */
-$conf['savedir'] = '/storage/data';

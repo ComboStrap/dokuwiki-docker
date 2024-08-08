@@ -1,6 +1,13 @@
 #!/bin/bash
 set -e
 
+#############################################
+# Script -
+# * Dokuwiki: Install if not present
+# * Conf: php-fpm and php
+# Note: the current directory is /var/www/html
+#############################################
+
 # Env
 # .bashrc to bring the environments
 . /root/.bashrc
@@ -50,27 +57,50 @@ export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 #############
 # Dokuwiki
 #############
+# https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
-if [[ ! -f /var/www/html/doku.php ]]; then
+if [[ ! -f doku.php ]]; then
 
     # Install is done by downloading
     # Download DokuWiki from the official website or from GitHub
-    curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || \
-    curl --fail -L "https://github.com/dokuwiki/dokuwiki/archive/refs/heads/master.tar.gz" -o dokuwiki.tgz
 
-    # Installation
-    echo "Dokuwiki not installed, installing ..."
-    echo "Installing Dokuwiki ..."
-    tar -xzf dokuwiki.tgz --strip-components=1
+    echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
+    curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz \
+        && tar -xzf dokuwiki.tgz --strip-components=1 \
+        && rm dokuwiki.tgz
 
     if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
+
       echo "Installing Sqlite Plugin ..."
-      unzip $ARCHIVE_DIR/sqlite.zip -d lib/plugins && mv lib/plugins/sqlite-master lib/plugins/sqlite
+      wget https://github.com/cosmocode/sqlite/archive/refs/heads/master.zip -O sqlite.zip \
+        && unzip -q sqlite.zip -d lib/plugins && mv lib/plugins/sqlite-master lib/plugins/sqlite \
+        && rm sqlite.zip
+
       echo "Installing Combo Plugin ..."
-      unzip $ARCHIVE_DIR/combo.zip -d lib/plugins && mv lib/plugins/combo-main lib/plugins/combo
+      wget https://github.com/ComboStrap/combo/archive/refs/heads/main.zip -O combo.zip \
+        && unzip -q combo.zip -d lib/plugins && mv lib/plugins/combo-main lib/plugins/combo \
+        && rm combo.zip
+
     else
+
       echo "Combo Plugin not enabled, skipping installation"
+
     fi
+
+    echo "#####################################################"
+    echo "# Go to the installer to configure your new wiki"
+    echo "# See doc at https://www.dokuwiki.org/installer"
+    echo "# The installer page is located at: http(s)://dokuwiki-docker-domain/install.php"
+    echo "#####################################################"
+
+fi
+
+# Copy dokuwiki health and configuration
+DOKUWIKI_DOCKER_VERSION_FILE=dokuwiki-docker-version
+if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION_FILE)" -ne 1 ]; then
+
+    echo "Copying conf and health dokuwiki files"
+    cp -r -f /var/www/dokuwiki/* .
 
 fi
 

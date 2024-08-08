@@ -17,6 +17,13 @@ docker run \
 
 On a desktop, you could now configure the wiki at http://localhost:8080/install.php
 
+## Features
+
+You got out of the box:
+* [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
+* Php Fpm and OpCache
+* the combo plugin (You can [disable it](#disable-automatic-combo-installation))
+
 ## Docker Volume Parameter
 
 The important run parameter is the [volume](#volume-content) to keep
@@ -67,7 +74,7 @@ docker run \
   -p 8080:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
   -v 'c:\temp\dokuwiki':/var/www/html \
-  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
 ### Check if php-fpm is alive (health)

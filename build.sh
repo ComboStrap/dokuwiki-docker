@@ -4,14 +4,15 @@ set -e
 
 
 # Dokuwiki Version + our version
-VERSION=php8.3-fpm-v1
+VERSION=php8.3-v1
 
 # Build or exit
 docker build . -t ghcr.io/combostrap/dokuwiki:"$VERSION" # || exit 1
 
 
-# Run
-# docker run --name dokuwiki -p 8080:80 --rm ghcr.io/combostrap/dokuwiki:php8.3-fpm-v1
+# Run. See README
+# Otherwise for combo dev
+# docker run --name dokuwiki --rm -p 8080:80 -v 'c:\dokuwiki':/var/www/html ghcr.io/combostrap/dokuwiki:php8.3-v1
 
 # Push
-# docker push ghcr.io/combostrap/dokuwiki:php8.3-fpm-v1
+# docker push ghcr.io/combostrap/dokuwiki:php8.3-v1
