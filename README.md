@@ -6,9 +6,7 @@ This repository contains `Dokuwiki in Docker` images.
 
 ## Run
 
-Choose:
-* a [tag](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki/versions) 
-* and mount a volume at `/var/www/html`
+Mount a [volume](#volume-content) at `/var/www/html`
 
 * Linux
 ```bash
@@ -29,20 +27,23 @@ docker run \
   ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
 ```
 
+
 ## Tag
 
 ### Syntax
 
 A tag has the syntax
 ```bash
-YYYY-MM-DDx-phpX.X-vX
+phpX.X-fpm-vX
 # example
-2024-02-06b-php8.3-v1
+php8.3-fpm-v1
 ```
 where:
-  * `YYYY-MM-DDx` is the [dokuwiki version](https://download.dokuwiki.org/archive)
-  * `phpX.X` is the php version
+  * `phpX.X-fpm` is the base php version used
   * `vX` is the version of this image
+  
+Dokuwiki is installed if not found on the volume. 
+See [how to choose the installed dokuwiki version](#choose-the-installed-version)
 
 ### Components
 
@@ -52,7 +53,7 @@ All image contains:
 
 ### Tag List
 
-  * [2024-02-06b-php8.3-v1](Dockerfiles/2024-02-06/Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
+  * [2024-02-06b-php8.3-v1](Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
 
 
 ## Configuration
@@ -77,16 +78,32 @@ docker run -e DOKU_DOCKER_ENV=dev
 
 ## How to
 
+### Choose the installed version
+
+You can choose the initial [version](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki/versions) 
+to install via the `DOKUWIKI_VERSION` environment.
+
+Example:
+```bash
+docker run \
+  --name dokuwiki \
+  --rm \
+  -p 8080:80 \
+  -e DOKUWIKI_VERSION=2024-02-06b \
+  -v 'c:\temp\dokuwiki':/var/www/html \
+  ghcr.io/combostrap/dokuwiki:2024-02-06b-php8.3-v1
+```
+
 ### Check if alive (health)
 
-`php-fpm` has a [configuration](Dockerfiles/2024-02-06/resources/php-fpm/www.conf) `ping.path` set to `/ping`.
+`php-fpm` has a [configuration](resources/php-fpm/www.conf) `ping.path` set to `/ping`.
 The response is given by the configuration `ping.response`.
 
 Example: `http://localhost/php-fpm/ping`
 
 ### Monitor with Status
 
-`php-fpm` has a [configuration](Dockerfiles/2024-02-06/resources/php-fpm/www.conf) `pm.status_path` set to `/status`.
+`php-fpm` has a [configuration](resources/php-fpm/www.conf) `pm.status_path` set to `/status`.
 
 Note the status endpoint is available only from localhost (ie ip 127.0.0.1)
 therefore you need to run it via `docker exec`
@@ -114,15 +131,13 @@ last request cpu:     0.00
 last request memory:  0
 ```
 
-For the documentation over the data and usage, see the [configuration file](Dockerfiles/2024-02-06/resources/php-fpm/www.conf)
+For the documentation over the data and usage, see the [configuration file](resources/php-fpm/www.conf)
 
-## Volume
+## Volume Content
 
 The volume contains a whole dokuwiki installation.
 
-If you want to keep the size low, you need to perform cleanup administrative task.
-
-We do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
+Why? We do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
 to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:backup)
 because it's too damn hard to keep the state of an installation.
 * Plugins does not use a version/release system.
@@ -131,7 +146,8 @@ because it's too damn hard to keep the state of an installation.
 * Identification file are co-located with configuration file in the `conf` directory.
 * Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp) 
 
+If you want to keep the size low, you need to perform cleanup administrative task.
 
 ## Other related projects
 
-* Official Docker Image
+* [Official DockWiki Docker Image](https://github.com/dokuwiki/docker)

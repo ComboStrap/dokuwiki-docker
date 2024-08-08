@@ -91,5 +91,5 @@ HEALTHCHECK --timeout=5s \
 ####################################
 # Entrypoint
 ####################################
-ADD --chmod=0755 resources/docker/docker-entrypoint.sh /usr/local/bin/
+ADD --chmod=0755 ../../resources/docker/docker-entrypoint.sh /usr/local/bin/
 ENTRYPOINT ["docker-entrypoint.sh"]
