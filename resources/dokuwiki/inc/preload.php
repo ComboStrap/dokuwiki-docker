@@ -9,5 +9,5 @@ if (!isset($config_cascade) || $config_cascade === []) {
 }
 
 // adjust the previously set config_cascade
-$config_cascade['main']['default'][] = '/var/www/html/conf/dokuwiki-docker.php';
-array_unshift($config_cascade['main']['protected'], '/var/www/html/conf/dokuwiki-docker.protected.php');
+$config_cascade['main']['default'][] = '/var/www/html/dokuwiki-docker/conf/default.php';
+array_unshift($config_cascade['main']['protected'], '/var/www/html/dokuwiki-docker/conf/protected.php');

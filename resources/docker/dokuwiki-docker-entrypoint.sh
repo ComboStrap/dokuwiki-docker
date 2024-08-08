@@ -20,16 +20,17 @@ set -e
 # https://github.com/Supervisor/supervisor/issues/120#issuecomment-209292870
 SUPERVISOR_CONF_PATH=${SUPERVISOR_CONF_PATH:-/supervisord.conf}
 LOG_HOME=${LOG_HOME:-/var/log}
-export PHP_FPM_LOG=${LOG_HOME}/php-fpm/php-fpm.log
+export PHP_ERROR_LOG=${LOG_HOME}/php/error.log
 export CADDY_LOG=${LOG_HOME}/caddy/caddy.log
 LOGS=(
-    "$PHP_FPM_LOG"
     "$CADDY_LOG"
+    "$PHP_ERROR_LOG"
 )
 for LOG in "${LOGS[@]}"; do
     LOG_PARENT=$(dirname "$LOG")
     mkdir -p "$LOG_PARENT"
     touch "$LOG"
+    chmod 666 "$LOG"
 done
 
 #############
@@ -38,13 +39,15 @@ done
 export PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-128M}
 export PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-$PHP_UPLOAD_MAX_FILESIZE}
 export PHP_MEMORY_LIMIT=${PHP_UPLOAD_LIMIT:-256M}
-export PHP_TIMEZONE=${PHP_TIMEZONE:-UTC}
+export PHP_DATE_TIMEZONE=${PHP_DATE_TIMEZONE:-UTC}
 
 
 # Note: Theses default configs are customized by configuration files into the $PHP_INI_DIR/conf.d/ directory.
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
+  echo "Production Mode"
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 else
+  echo "Development Mode"
   mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 fi
 

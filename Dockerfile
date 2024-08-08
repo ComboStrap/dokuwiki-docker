@@ -46,7 +46,7 @@ COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 # The file name is the standard name configuration in php-fpm
 ####################################
 HEALTHCHECK --timeout=5s \
-    CMD curl --silent --fail-with-body http://localhost/health_check.php || exit 1
+    CMD curl --silent --fail-with-body http://localhost/dokuwiki/ping.php || exit 1
 
 ####################################
 # Entrypoint and default CMD
@@ -76,6 +76,8 @@ LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 # Configuration file are at the end to not build again
 #### Supervisor
 ADD resources/supervisor/supervisord.conf /supervisord.conf
+#### Php
+ADD resources/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
 #### Php-fpm
 # Security Note: Don't expose the Php FPM service to the world
 # Because configuration settings are passed to php-fpm as fastcgi headers,
@@ -83,9 +85,6 @@ ADD resources/supervisor/supervisord.conf /supervisord.conf
 # If you want to expose the PHP-FPM port (default 9000), see the `listen.allowed_clients` conf.
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
-RUN mkdir -p /var/log/php-fpm \
-    && touch /var/log/php-fpm/www.error.log && chmod 666 /var/log/php-fpm/www.error.log \
-    && touch /var/log/php-fpm/www.access.log && chmod 666 /var/log/php-fpm/www.access.log
 ADD --chmod=0644 resources/php-fpm/www.conf /usr/local/etc/php-fpm.d/
 #### Dokuwiki
 RUN mkdir "/var/www/dokuwiki/"

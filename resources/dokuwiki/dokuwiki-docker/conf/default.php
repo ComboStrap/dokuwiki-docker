@@ -8,6 +8,8 @@
  * https://www.dokuwiki.org/config:im_convert
  */
 $conf['userewrite'] = 1;
+// `use slash` is needed with user rewrite
+$conf['useslash'] = 1;
 
 /**
  * Gd
