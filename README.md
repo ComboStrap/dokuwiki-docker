@@ -115,3 +115,23 @@ last request memory:  0
 ```
 
 For the documentation over the data and usage, see the [configuration file](Dockerfiles/2024-02-06/resources/php-fpm/www.conf)
+
+## Volume
+
+The volume contains a whole dokuwiki installation.
+
+If you want to keep the size low, you need to perform cleanup administrative task.
+
+We do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
+to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:backup)
+because it's too damn hard to keep the state of an installation.
+* Plugins does not use a version/release system.
+* You then need to back up the `lib` directory that contains the most code.
+* Configuration file may be located into plugin/template (ie style.ini)
+* Identification file are co-located with configuration file in the `conf` directory.
+* Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp) 
+
+
+## Other related projects
+
+* Official Docker Image

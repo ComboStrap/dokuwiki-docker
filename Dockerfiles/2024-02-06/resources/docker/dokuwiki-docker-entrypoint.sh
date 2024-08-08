@@ -1,12 +1,6 @@
 #!/bin/bash
 set -e
 
-# Comes from https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint
-# first arg is `-f` or `--some-option`
-if [ "${1#-}" != "$1" ]; then
-	set -- php-fpm "$@"
-fi
-
 # Env
 # .bashrc to bring the environments
 . /root/.bashrc
@@ -34,7 +28,13 @@ done
 #############
 # Php Conf
 #############
-# Note: Theses default configs can be customized by copying configuration files into the $PHP_INI_DIR/conf.d/ directory.
+export PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-128M}
+export PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-$PHP_UPLOAD_MAX_FILESIZE}
+export PHP_MEMORY_LIMIT=${PHP_UPLOAD_LIMIT:-256M}
+export PHP_TIMEZONE=${PHP_TIMEZONE:-UTC}
+
+
+# Note: Theses default configs are customized by configuration files into the $PHP_INI_DIR/conf.d/ directory.
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 else
@@ -50,16 +50,18 @@ export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 #############
 # Dokuwiki
 #############
+export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
 if [[ ! -f /var/www/html/doku.php ]]; then
 
-    # Install is done by unarchiving, not downloading to avoid network problem, not copying to avoid a lot of IO
-    # The location of the archive
-    ARCHIVE_DIR=/var/www/dokuwiki
+    # Install is done by downloading
+    # Download DokuWiki from the official website or from GitHub
+    curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || \
+    curl --fail -L "https://github.com/dokuwiki/dokuwiki/archive/refs/heads/master.tar.gz" -o dokuwiki.tgz
 
     # Installation
     echo "Dokuwiki not installed, installing ..."
     echo "Installing Dokuwiki ..."
-    tar -xzf $ARCHIVE_DIR/dokuwiki.tgz --strip-components=1
+    tar -xzf dokuwiki.tgz --strip-components=1
 
     if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
       echo "Installing Sqlite Plugin ..."
@@ -75,6 +77,6 @@ fi
 ################
 # Start
 ################
-# Exec comes from https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint
-# It permits to respond to ctrl+c key and terminate the running process.
-exec "$@"
+# https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint
+# Exec permits to respond to ctrl+c key and terminate the running process.
+exec docker-php-entrypoint "$@"

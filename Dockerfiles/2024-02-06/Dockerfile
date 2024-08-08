@@ -66,10 +66,14 @@ RUN apt-get install -y libfcgi \
 
 # Add Combostrap required Php Module
 # You can check the installed module with `docker run --rm php:8.3-fpm-bookworm php -m`
-# We use the `install-php-extensions` script to takes care of the needed extensions package installation
+#
+# We use the `install-php-extensions` script to takes care of the package installations needed by the installation
 # See https://github.com/mlocati/docker-php-extension-installer
+#
+# We follows also the extensions of the official image https://github.com/dokuwiki/docker/blob/main/root/build-deps.sh
+# ie gd bz2 intl opcache bz2 pdo_sqlite (pdo_sqlite is already installed)
 ADD --chmod=0755 https://github.com/mlocati/docker-php-extension-installer/releases/latest/download/install-php-extensions /usr/local/bin/
-RUN install-php-extensions gd intl opcache
+RUN install-php-extensions gd intl opcache bz2
 
 ####################################
 # Caddy
@@ -77,6 +81,12 @@ RUN install-php-extensions gd intl opcache
 COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 COPY resources/caddy/Caddyfile /Caddyfile
 EXPOSE 80
+
+####################################
+# Healthcheck
+####################################
+HEALTHCHECK --timeout=5s \
+    CMD curl --silent --fail-with-body http://localhost/health.php || exit 1
 
 ####################################
 # Entrypoint
