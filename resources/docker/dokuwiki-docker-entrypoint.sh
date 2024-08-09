@@ -72,6 +72,10 @@ if [[ ! -f doku.php ]]; then
         && tar -xzf dokuwiki.tgz --strip-components=1 \
         && rm dokuwiki.tgz
 
+    # Delete local.php from the checked files by the install script
+    # ie comment 'local' => DOKU_LOCAL . 'local.php'
+    sed -i -E "s/('local'\s*=>\s*DOKU_LOCAL\s*.\s*'local.php')/\/\/ Dokuwiki Docker - \1/g" install.php
+
     if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
 
       echo "Installing Sqlite Plugin ..."
@@ -106,6 +110,18 @@ if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION
     cp -r -f /var/www/dokuwiki/* .
 
 fi
+
+################
+# Git
+################
+# DOKU_DOCKER_GIT
+# The default globbing in bash does not include filenames starting with a . (ie hidden files)
+#shopt -s dotglob
+#git clone https://github.com/Tabulify/tabulify.com.git temp
+#cp -rf temp/* .
+#rm -rf temp
+#git add conf/
+#git add data/
 
 ################
 # Start

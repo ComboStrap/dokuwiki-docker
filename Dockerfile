@@ -46,7 +46,7 @@ COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 # The file name is the standard name configuration in php-fpm
 ####################################
 HEALTHCHECK --timeout=5s \
-    CMD curl --silent --fail-with-body http://localhost/dokuwiki/ping.php || exit 1
+    CMD curl --silent --fail-with-body http://localhost/dokuwiki-docker/ping.php || exit 1
 
 ####################################
 # Entrypoint and default CMD
