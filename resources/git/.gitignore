@@ -1,0 +1,14 @@
+/*
+!/doc/
+!/docs/
+!/conf/
+/conf/*
+!/conf/local.php
+!/conf/*.local.php
+!/data/
+/data/*
+!/data/pages/
+!/data/media/
+!/data/combo/
+!.gitignore
+!README.md
