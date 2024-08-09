@@ -79,7 +79,7 @@ docker run \
 
 ### Check if php-fpm is alive (health)
 
-`php-fpm` has a [configuration](resources/php-fpm/www.conf) `ping.path` set to `/ping`.
+`php-fpm` has a [configuration](resources/conf/php-fpm/www.conf) `ping.path` set to `/ping`.
 The response is given by the configuration `ping.response`.
 
 Example: `http://localhost/php-fpm/ping`
@@ -91,7 +91,7 @@ Example: `http://localhost/health.php`
 
 ### Monitor php-fpm with status
 
-`php-fpm` has a [configuration](resources/php-fpm/www.conf) `pm.status_path` set to `/status`.
+`php-fpm` has a [configuration](resources/conf/php-fpm/www.conf) `pm.status_path` set to `/status`.
 
 Note the status endpoint is available only from localhost (ie ip 127.0.0.1)
 therefore you need to run it via `docker exec`
@@ -119,7 +119,7 @@ last request cpu:     0.00
 last request memory:  0
 ```
 
-For the documentation over the data and usage, see the [configuration file](resources/php-fpm/www.conf)
+For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
 
 ### Disable Automatic Combo Installation
 

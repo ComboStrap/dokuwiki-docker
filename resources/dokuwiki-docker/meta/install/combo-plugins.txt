@@ -1,0 +1,7 @@
+# The default recommended plugins of a combo installation
+sqlite       https://github.com/cosmocode/sqlite
+combo        https://github.com/ComboStrap/combo
+move         https://github.com/michitux/dokuwiki-plugin-move
+searchindex  https://github.com/splitbrain/dokuwiki-plugin-searchindex
+stale        https://github.com/ComboStrap/stale
+dump         https://github.com/ComboStrap/dump

@@ -51,8 +51,7 @@ HEALTHCHECK --timeout=5s \
 ####################################
 # Entrypoint and default CMD
 ####################################
-ADD --chmod=0755 resources/docker/dokuwiki-docker-entrypoint.sh /usr/local/bin/
-ENTRYPOINT ["dokuwiki-docker-entrypoint.sh"]
+ENTRYPOINT ["dokuwiki-docker-entrypoint"]
 # we set the `c` to avoid the below warning:
 # UserWarning: Supervisord is running as root and it is searching
 # for its configuration file in default locations (including its current working directory);
@@ -75,9 +74,9 @@ LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 ####################################
 # Configuration file are at the end to not build again
 #### Supervisor
-ADD resources/supervisor/supervisord.conf /supervisord.conf
+ADD resources/conf/supervisor/supervisord.conf /supervisord.conf
 #### Php
-ADD resources/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
+ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
 #### Php-fpm
 # Security Note: Don't expose the Php FPM service to the world
 # Because configuration settings are passed to php-fpm as fastcgi headers,
@@ -85,10 +84,14 @@ ADD resources/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.
 # If you want to expose the PHP-FPM port (default 9000), see the `listen.allowed_clients` conf.
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
-ADD --chmod=0644 resources/php-fpm/www.conf /usr/local/etc/php-fpm.d/
-#### Dokuwiki
-RUN mkdir "/var/www/dokuwiki/"
-COPY resources/dokuwiki /var/www/dokuwiki/
-#### caddy
+ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
+#### Caddy
 EXPOSE 80
-COPY resources/caddy/Caddyfile /Caddyfile
+COPY resources/conf/caddy/Caddyfile /Caddyfile
+
+####################################
+# Dokuwiki Docker App
+####################################
+RUN mkdir "/opt/dokuwiki-docker/"
+COPY resources/dokuwiki-docker /opt/dokuwiki-docker/
+ADD --chmod=0755 resources/dokuwiki-docker/bin /usr/local/bin/

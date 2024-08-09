@@ -8,6 +8,10 @@ set -e
 # Note: the current directory is /var/www/html
 #############################################
 
+DOKUWIKI_DOCKER_HOME=/opt/dokuwiki-docker
+DOKUWIKI_DOCKER_VERSION=1
+DOKUWIKI_DOCKER_VERSION_FILE=dokuwiki-docker-version
+
 # Env
 # .bashrc to bring the environments
 . /root/.bashrc
@@ -68,30 +72,30 @@ if [[ ! -f doku.php ]]; then
     # Download DokuWiki from the official website or from GitHub
 
     echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
+    # --no-same-owner so that the files have root as owner
     curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz \
-        && tar -xzf dokuwiki.tgz --strip-components=1 \
+        && tar --no-same-owner -xzf dokuwiki.tgz --strip-components=1 \
         && rm dokuwiki.tgz
 
     # Delete local.php from the checked files by the install script
     # ie comment 'local' => DOKU_LOCAL . 'local.php'
     sed -i -E "s/('local'\s*=>\s*DOKU_LOCAL\s*.\s*'local.php')/\/\/ Dokuwiki Docker - \1/g" install.php
 
+    # Install Combo and plugins
     if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
-
-      echo "Installing Sqlite Plugin ..."
-      wget https://github.com/cosmocode/sqlite/archive/refs/heads/master.zip -O sqlite.zip \
-        && unzip -q sqlite.zip -d lib/plugins && mv lib/plugins/sqlite-master lib/plugins/sqlite \
-        && rm sqlite.zip
-
-      echo "Installing Combo Plugin ..."
-      wget https://github.com/ComboStrap/combo/archive/refs/heads/main.zip -O combo.zip \
-        && unzip -q combo.zip -d lib/plugins && mv lib/plugins/combo-main lib/plugins/combo \
-        && rm combo.zip
-
+      echo "Combo Installation"
+      COMBO_PLUGINS_FILE="$DOKUWIKI_DOCKER_HOME/meta/install/combo-plugins.txt"
+      grep -v '^#' "$COMBO_PLUGINS_FILE" |
+          while IFS=' ' read -r PLUGIN_NAME PLUGIN_GIT_URL
+          do
+            if [ -n "$PLUGIN_NAME" ]; then
+              echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_GIT_URL)"
+              git clone --depth 1 "$PLUGIN_GIT_URL" "lib/plugins/$PLUGIN_NAME" ||
+              rm "lib/plugins/$PLUGIN_NAME/.git"
+            fi
+          done
     else
-
-      echo "Combo Plugin not enabled, skipping installation"
-
+        echo "Combo Installation disabled, skipping installation"
     fi
 
     echo "#####################################################"
@@ -103,25 +107,30 @@ if [[ ! -f doku.php ]]; then
 fi
 
 # Copy dokuwiki health and configuration
-DOKUWIKI_DOCKER_VERSION_FILE=dokuwiki-docker-version
-if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION_FILE)" -ne 1 ]; then
+if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION_FILE)" -ne $DOKUWIKI_DOCKER_VERSION ]; then
 
     echo "Copying conf and health dokuwiki files"
-    cp -r -f /var/www/dokuwiki/* .
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki/* .
 
 fi
 
 ################
-# Git
+# Git ComboStrap WebSite
 ################
-# DOKU_DOCKER_GIT
-# The default globbing in bash does not include filenames starting with a . (ie hidden files)
-#shopt -s dotglob
-#git clone https://github.com/Tabulify/tabulify.com.git temp
-#cp -rf temp/* .
-#rm -rf temp
-#git add conf/
-#git add data/
+if [ -n "$DOKU_DOCKER_GIT" ] && [[ ! -d './.git' ]]; then
+  echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT"
+  # The default globbing in bash does not include filenames starting with a . (ie hidden files)
+  # We want to include the `.gitignore` to avoid including the whole dokuwiki software
+  shopt -s dotglob
+  # safe directory to resolve `fatal: detected dubious ownership in repository at '/var/www/html'`
+  git config --global --add safe.directory "$PWD"
+  git clone "$DOKU_DOCKER_GIT" temp
+  cp -rf temp/* .
+  rm -rf temp
+  git add conf/
+  git add data/
+fi
+
 
 ################
 # Start
