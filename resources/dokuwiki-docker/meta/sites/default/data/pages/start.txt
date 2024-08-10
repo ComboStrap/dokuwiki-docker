@@ -1,0 +1,5 @@
+====== Welcome to your new ComboStrap Installation =====
+
+
+
+* You should configure your wiki on the [[/install.php|Install page]]

@@ -2,9 +2,11 @@
 
 
 ## About
-This repository contains ready `Dokuwiki in Docker` images.
+This repository contains ready [Dokuwiki](https://dokuwiki.org) in Docker images 
+with ComboStrap and related plugins pre-installed (optional)
 
-Get a dokuwiki app with docker in a single line of command.
+
+Get a ComboStrap dokuwiki based installation in a single line of command.
 
 Example: Linux/Cygwin
 ```bash
