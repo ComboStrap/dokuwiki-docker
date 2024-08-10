@@ -11,4 +11,5 @@
 !/data/media/
 !/data/combo/
 !.gitignore
+!.gitattributes
 !README.md
