@@ -62,7 +62,7 @@ fi
 export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 
 #############
-# Dokuwiki
+# Dokuwiki Install
 #############
 # https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
@@ -77,14 +77,17 @@ if [[ ! -f doku.php ]]; then
         && tar --no-same-owner -xzf dokuwiki.tgz --strip-components=1 \
         && rm dokuwiki.tgz
 
-    # Delete local.php from the checked files by the install script
-    # ie comment 'local' => DOKU_LOCAL . 'local.php'
-    sed -i -E "s/('local'\s*=>\s*DOKU_LOCAL\s*.\s*'local.php')/\/\/ Dokuwiki Docker - \1/g" install.php
+    ## Copy the default Website
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/init-install/sites/default/* .
+
+    ## Copy the default ACL Policy
+    ## No need to go the the installer https://www.dokuwiki.org/installer
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/init-install/acl/public/* ./conf
 
     # Install Combo and plugins
     if [[ "${DOKU_DOCKER_COMBO_ENABLE}" != "false" ]]; then
       echo "Combo Installation"
-      COMBO_PLUGINS_FILE="$DOKUWIKI_DOCKER_HOME/meta/install/combo-plugins.txt"
+      COMBO_PLUGINS_FILE="$DOKUWIKI_DOCKER_HOME/meta/plugins/combo-plugins.txt"
       grep -v '^#' "$COMBO_PLUGINS_FILE" |
           while IFS=' ' read -r PLUGIN_NAME PLUGIN_GIT_URL
           do
@@ -97,12 +100,6 @@ if [[ ! -f doku.php ]]; then
     else
         echo "Combo Installation disabled, skipping installation"
     fi
-
-    echo "#####################################################"
-    echo "# Go to the installer to configure your new wiki"
-    echo "# See doc at https://www.dokuwiki.org/installer"
-    echo "# The installer page is located at: http(s)://dokuwiki-docker-domain/install.php"
-    echo "#####################################################"
 
 fi
 

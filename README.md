@@ -36,29 +36,21 @@ with a new dokuwiki installation.
 You need to use the [DokuWiki's installer](https://www.dokuwiki.org/installer) to configure it.
 
 Example:
-* Linux
+* Linux / Windows WSL
 ```bash
+cd ~/your-site
 docker run \
-  --name dokuwiki \
+  --name combo \
   --rm \
   -p 8080:80 \
-  -v /tmp/doku/:var/www/html \
+  -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
-* Cygwin (Windows Bash)
-```bash
-docker run \
-  --name dokuwiki \
-  --rm \
-  -p 8080:80 \
-  -v 'c:\temp\dokuwiki':/var/www/html \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
-```
+* On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
 
 On a desktop:
 * Dokuwiki would be available at: http://localhost:8080
 * and the installer at: http://localhost:8080/install.php
-
 
 
 ## How to
@@ -75,7 +67,7 @@ docker run \
   --rm \
   -p 8080:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
-  -v 'c:\temp\dokuwiki':/var/www/html \
+  -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
@@ -185,6 +177,39 @@ All image contains:
 ### Tag List
 
 * [php8.3-v1](Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
+
+
+## Support
+### Poor Windows Perf with Local Directory Volume 
+
+On Windows, you should not mount a windows host local directory
+because it will be fucking slow.
+
+ie don't do that
+```dos
+docker run ^
+  -v c:\home\username\your-site:/var/www/html ^
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
+```
+
+Mounting a Windows folder into a Docker container is always slow no matter how you do it.
+WSL2 is even slower than WSL1 in that respect.
+
+See the [related issue](https://github.com/docker/for-win/issues/6742) that explains that this is structural.
+
+The solution is buried into the [Docker WSL best practice](https://docs.docker.com/desktop/wsl/best-practices/)
+```
+It's recommended that you store source code and other data that is bind-mounted into Linux containers.
+``` 
+
+You should then:
+* move the site data into the WSL Distro
+* and from a Linux shell run:
+```bash
+docker run \
+  -v ~\your-site:/var/www/html \
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
+```
 
 
 ## Other related projects
