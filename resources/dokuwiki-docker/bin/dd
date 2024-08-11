@@ -1,0 +1,37 @@
+#!/bin/bash
+set -e
+
+# The dokuwiki docker command cli and function
+
+# The first parameter is the git url
+dd_install_site() {
+    echo "Installing the site: $1"
+    # The default globbing in bash does not include filenames starting with a . (ie hidden files)
+    # We want to include the `.gitignore` to avoid including the whole dokuwiki software
+    shopt -s dotglob
+    # safe directory to resolve `fatal: detected dubious ownership in repository at '/var/www/html'`
+    git config --global --add safe.directory "$PWD"
+    git clone "$1" temp
+    cp -rf temp/* .
+    rm -rf temp
+
+    # Install Plugins
+    PLUGINS_FILE="data/combo/instance/plugins.txt"
+    if [[ -f $PLUGINS_FILE ]]; then
+      echo "Plugins Installation"
+      grep -v '^#' "$PLUGINS_FILE" |
+          while IFS=' ' read -r PLUGIN_NAME PLUGIN_ARCHIVE_URL
+          do
+            # If PLUGIN_NAME is empty, it's an empty line
+            if [ -n "$PLUGIN_NAME" ]; then
+              echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
+              curl "$PLUGIN_ARCHIVE_URL/archive/$PLUGIN_HASH.zip" "$PLUGIN_NAME.zip"
+              bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME"
+              rm "$PLUGIN_NAME.zip"
+            fi
+          done
+    else
+        echo "No plugin files found, skipping installation"
+    fi
+
+}

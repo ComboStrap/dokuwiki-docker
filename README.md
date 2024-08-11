@@ -24,7 +24,11 @@ On a desktop, you could now configure the wiki at http://localhost:8080/install.
 You got out of the box:
 * [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
 * Php Fpm and OpCache
-* the combo plugin (You can [disable it](#disable-automatic-combo-installation))
+* a default [ComboStrap Website](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
+  * You can:
+    * [disable it](#disable-automatic-default-website-installation))
+    * or [set your own](#set-your-combostrap-website)
+
 
 ## Docker Volume Parameter
 
@@ -115,15 +119,24 @@ last request memory:  0
 
 For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
 
-### Disable Automatic Combo Installation
+### Disable Automatic Default WebSite Installation
 
-By default, this image will [install the Combo plugin](https://combostrap.com/get-started/how-to-install-combo-zzjmtimy)
+By default, this image will [install the default ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-5gxpcdgy#default_website)
 automatically.
 
-To disable this behavior, you need to set the `DOKU_DOCKER_COMBO_ENABLE` environment variable.
+To disable this behavior, you need to set the `DOKU_DOCKER_DEFAULT_SITE` environment variable to `false`
 
 ```bash
-docker run -e DOKU_DOCKER_COMBO_ENABLE=false
+docker run -e DOKU_DOCKER_DEFAULT_SITE=false
+```
+
+### Set your ComboStrap WebSite
+
+
+To defines the ComboStrap WebSite that this image should run, you need to set the `$DOKU_DOCKER_SITE` environment variable to a git URL.
+
+```bash
+docker run -e DOKU_DOCKER_SITE=https://github.com/ComboStrap/site-default.git
 ```
 
 ### Set in dev mode
@@ -144,7 +157,8 @@ to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:ba
 because it's too damn hard to keep the state of an installation.
 * Plugins does not use a version/release system.
 * You then need to back up the `lib` directory that contains the most code.
-* Configuration file may be located into plugin/template (ie style.ini)
+* Configuration file may be scattered around. Example:
+  * [Interwiki Icon](https://www.dokuwiki.org/interwiki#configuring_interwiki_shortcut_icons)
 * Identification file are co-located with configuration file in the `conf` directory.
 * Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp)
 

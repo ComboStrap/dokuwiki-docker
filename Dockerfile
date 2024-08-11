@@ -16,6 +16,10 @@ RUN apt-get update && apt-get install -y \
     unzip \
     wget \
     git \
+    # bsdtar to unzip without the first directory \
+    # https://www.libarchive.org/
+    # https://packages.debian.org/unstable/libarchive-tools
+    && apt-get install libarchive-tools \
     # Supervisor Installation
     && apt-get install --no-install-recommends -y supervisor \
     # Php FastCgi - install the cgi-fcgi client to troubleshoot phpFpm
@@ -90,8 +94,9 @@ EXPOSE 80
 COPY resources/conf/caddy/Caddyfile /Caddyfile
 
 ####################################
-# Dokuwiki Docker App
+# Dokuwiki Docker App Install
 ####################################
 RUN mkdir "/opt/dokuwiki-docker/"
 COPY resources/dokuwiki-docker /opt/dokuwiki-docker/
-ADD --chmod=0755 resources/dokuwiki-docker/bin /usr/local/bin/
+RUN chmod 0755 /opt/dokuwiki-docker/*
+ENV PATH="/opt/dokuwiki-docker/bin:${PATH}"
