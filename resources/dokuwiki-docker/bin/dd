@@ -1,5 +1,4 @@
 #!/bin/bash
-set -e
 
 # The dokuwiki docker command cli and function
 
@@ -25,7 +24,8 @@ dd_install_site() {
             # If PLUGIN_NAME is empty, it's an empty line
             if [ -n "$PLUGIN_NAME" ]; then
               echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
-              curl "$PLUGIN_ARCHIVE_URL/archive/$PLUGIN_HASH.zip" "$PLUGIN_NAME.zip"
+              curl --fail -L "$PLUGIN_ARCHIVE_URL" -o "$PLUGIN_NAME.zip"
+              mkdir -p "lib/plugins/$PLUGIN_NAME"
               bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME"
               rm "$PLUGIN_NAME.zip"
             fi

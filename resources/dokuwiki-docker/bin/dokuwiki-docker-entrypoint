@@ -1,5 +1,9 @@
 #!/bin/bash
-set -e
+
+if [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
+  # Exit if any error
+  set -e
+fi;
 
 # Dependencies
 SCRIPT_DIR="$(dirname "$0")"
