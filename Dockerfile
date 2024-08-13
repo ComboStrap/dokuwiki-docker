@@ -78,6 +78,8 @@ LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 ####################################
 # Configuration file are at the end to not build again
 #### Supervisor
+# All users can write in /run becayse supervisor will write socket/file in it
+RUN chmod 0777 /run
 ADD resources/conf/supervisor/supervisord.conf /supervisord.conf
 #### Php
 ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
@@ -89,11 +91,13 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
+RUN chmod 0777 /var/log # Gives permission to the running user to create log
+RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to create php ini file
 #### Caddy
 EXPOSE 80
 COPY resources/conf/caddy/Caddyfile /Caddyfile
-#### Bash (to get the same env with `docker exec`)
-ADD --chmod=0644 resources/conf/bash/.bashrc /root/.bashrc
+#### Bash (to get the same env with `docker exec bash -l`)
+ADD --chmod=0755 resources/conf/bash/dokuwiki-docker.sh /etc/profile.d/dokuwiki-docker.sh
 
 ####################################
 # Dokuwiki Docker App Install

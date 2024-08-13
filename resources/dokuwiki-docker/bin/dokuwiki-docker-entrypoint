@@ -20,9 +20,6 @@ DOKU_DOCKER_HOME=/opt/dokuwiki-docker
 DOKU_DOCKER_VERSION=1
 DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
 
-# Env
-# .bashrc to bring the environments
-. /root/.bashrc
 
 #############
 # Supervisor
@@ -182,6 +179,8 @@ else
   dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
 fi
 
+
+dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)"
 
 ################
 # Start

@@ -180,6 +180,49 @@ You can set it in dev mode via the `DOKU_DOCKER_ENV`
 docker run -e DOKU_DOCKER_ENV=dev ....
 ```
 
+### Configure Php
+
+Php can be configured via environment variables.
+
+The convention is that you need to:
+* capitilze the configuration name 
+* replace all separator by `_`
+* and add `PHP_` as prefix.
+
+For instance for the `date.timezone`, you need to set the `PHP_DATE_TIMEZONE` environment.  
+```bash
+docker run -e PHP_DATE_TIMEZONE=UTC ....
+```
+
+All actual possibles configurations can be seen in the [php dokuwiki-docker.ini files](resources/conf/php/dokuwiki-docker.ini)
+
+### Run as the host user
+
+By default, the container will run as `root` but if you develop, 
+you may want to change the user to the host user
+
+You do it by setting the `user` option.
+
+```bash
+# check your id (should be 1000:1000)
+id
+# then use them
+docker run \
+  --user 1000:1000 \
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
+```
+
+### Get a Bash Shell in the container
+
+To get a bash shell in the container that gets the same environment that the running container
+you need to create a login shell with the `-l` flag
+
+Example:
+```bash
+docker exec -ti combo-site-default bash -l
+```
+
+Why? Only login shell will run the [system env script](resources/conf/bash/dokuwiki-docker.sh) located in `/etc/profile.d/` directory.
 
 ## Tag
 
