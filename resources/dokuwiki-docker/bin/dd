@@ -27,9 +27,14 @@ dd_install_site() {
             # If PLUGIN_NAME is empty, it's an empty line
             if [ -n "$PLUGIN_NAME" ]; then
               dd_echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
+              dd_echo "    * Get the archive at ($PLUGIN_ARCHIVE_URL)"
               curl --fail -L "$PLUGIN_ARCHIVE_URL" -o "$PLUGIN_NAME.zip"
+              dd_echo "    * Create the directory"
               mkdir -p "lib/plugins/$PLUGIN_NAME"
-              bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME"
+              # > /dev/null -> no output
+              dd_echo "    * Unpack the archive"
+              bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME" > /dev/null 2>&1
+              dd_echo "    * Remove the archive"
               rm "$PLUGIN_NAME.zip"
             fi
           done
