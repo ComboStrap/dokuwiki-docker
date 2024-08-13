@@ -204,11 +204,13 @@ you may want to change the user to the host user
 You do it by setting the `user` option.
 
 ```bash
-# check your id (should be 1000:1000)
+# check your ids (uid:gid should be 1000:1000)
 id
 # then use them
 docker run \
   --user 1000:1000 \
+  --rm \
+  -p 8081:80 \
   ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
