@@ -18,7 +18,7 @@ dd_install_site() {
     rm -rf temp
 
     # Install Plugins
-    PLUGINS_FILE="data/combo/instance/plugins.txt"
+    PLUGINS_FILE="data/combo/instance/plugins.dat"
     if [[ -f $PLUGINS_FILE ]]; then
       dd_echo "Plugins Installation"
       grep -v '^#' "$PLUGINS_FILE" |
