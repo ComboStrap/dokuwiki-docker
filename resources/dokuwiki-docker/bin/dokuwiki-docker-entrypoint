@@ -20,6 +20,11 @@ DOKU_DOCKER_HOME=/opt/dokuwiki-docker
 DOKU_DOCKER_VERSION=1
 DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
 
+#############################################
+# Env
+#############################################
+# To bring the environment
+. /etc/profile.d/dokuwiki-docker-env.sh
 
 #############
 # Supervisor
@@ -45,7 +50,7 @@ done
 #############
 # Php Conf
 #############
-# See bashrc for the conf so that they are also passed in a `docker exec` command
+# See dokuwiki-docker-env for the conf so that they are also passed in a `docker exec` command
 
 # Note: Theses default configs are customized by configuration files into the $PHP_INI_DIR/conf.d/ directory.
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then

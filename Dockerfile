@@ -97,7 +97,7 @@ RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to crea
 EXPOSE 80
 COPY resources/conf/caddy/Caddyfile /Caddyfile
 #### Bash (to get the same env with `docker exec bash -l`)
-ADD --chmod=0755 resources/conf/bash/dokuwiki-docker.sh /etc/profile.d/dokuwiki-docker.sh
+ADD --chmod=0755 resources/conf/bash/dokuwiki-docker-env.sh /etc/profile.d/dokuwiki-docker-env.sh
 
 ####################################
 # Dokuwiki Docker App Install
