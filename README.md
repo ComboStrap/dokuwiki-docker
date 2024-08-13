@@ -11,7 +11,7 @@ To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Default Si
 ```bash
 # bash
 docker run \
-  --name dokuwiki \
+  --name combo-site-default \
   --rm \
   -p 8080:80 \
   -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
@@ -24,7 +24,7 @@ docker run \
 You got out of the box:
 * a default [Website](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
   * You can:
-    * [disable it](#disable-automatic-default-website-installation))
+    * [disable it](#disable-automatic-default-website-installation)
     * or [set your own](#set-your-combostrap-git-website)
 * [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
 * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) and [OpCache](https://www.php.net/manual/en/book.opcache.php) for performance
@@ -78,7 +78,7 @@ Example:
 ```bash
 cd ~/your-site
 docker run \
-  --name combo \
+  --name combo-site-default \
   --rm \
   -p 8080:80 \
   -v $PWD:/var/www/html \
@@ -98,7 +98,7 @@ to install via the `DOKUWIKI_VERSION` environment.
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
 ```bash
 docker run \
-  --name dokuwiki \
+  --name combo-site-default \
   --rm \
   -p 8080:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
@@ -111,23 +111,18 @@ docker run \
 `php-fpm` has a [configuration](resources/conf/php-fpm/www.conf) `ping.path` set to `/ping`.
 The response is given by the configuration `ping.response`.
 
-Example: `http://localhost/php-fpm/ping`
+Example: `http://localhost:8081/php-fpm/ping`
 
 ### Check if dokuwiki is alive (health)
 
 
-Example: `http://localhost/health.php`
+Example: `http://localhost:8081/dokuwiki-docker/ping.php`
 
-### Monitor php-fpm with status
-
-`php-fpm` has a [configuration](resources/conf/php-fpm/www.conf) `pm.status_path` set to `/status`.
-
-Note the status endpoint is available only from localhost (ie ip 127.0.0.1)
-therefore you need to run it via `docker exec`
+### Monitor php-fpm with status on localhost only
 
 Example: 
 ```bash
-docker exec -ti dokuwiki curl localhost/php-fpm/status?full
+docker exec -ti combo-site-default curl localhost/php-fpm/status?full
 ```
 ```
 pool:                 www
@@ -147,6 +142,9 @@ script:               /var/www/html
 last request cpu:     0.00
 last request memory:  0
 ```
+
+The status endpoint is available only from localhost (ie ip 127.0.0.1) for security reason
+therefore you need to run it via `docker exec`
 
 For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
 
@@ -260,7 +258,7 @@ All image contains:
 On Windows, you should not mount a windows host local directory
 because it will be fucking slow.
 
-ie don't do that
+ie `DON'T` do that
 ```dos
 docker run ^
   -v c:\home\username\your-site:/var/www/html ^
