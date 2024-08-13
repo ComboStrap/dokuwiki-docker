@@ -2,42 +2,76 @@
 
 
 ## About
-This repository contains ready [Dokuwiki](https://dokuwiki.org) in Docker images 
-with ComboStrap and related plugins pre-installed (optional)
+This repository contains the `Dokuwiki in Docker` image.
 
 
-Get a ComboStrap dokuwiki based installation in a single line of command.
+Get a Dokuwiki installation with a website in a single line of command.
 
-Example: Linux/Cygwin
+To get a [Dokuwiki server](https://dokuwiki.org) at http://localhost:8080, execute:
 ```bash
+# bash
 docker run \
   --name dokuwiki \
   --rm \
   -p 8080:80 \
+  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
   ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
-On a desktop, you could now configure the wiki at http://localhost:8080/install.php
 
 ## Features
 
 You got out of the box:
-* [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
-* Php Fpm and OpCache
-* a default [ComboStrap Website](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
+* a default [Website](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
   * You can:
     * [disable it](#disable-automatic-default-website-installation))
-    * or [set your own](#set-your-combostrap-website)
+    * or [set your own](#set-your-combostrap-git-website)
+* [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
+* [Php Fpm](https://www.php.net/manual/en/install.fpm.php) and [OpCache](https://www.php.net/manual/en/book.opcache.php) for performance
 
 
-## Docker Volume Parameter
+## How to
 
-The important run parameter is the [volume](#volume-content) to keep
+### Set an admin user
+
+By default, a site will run with the `readonly` ACL policy.
+The site cannot be edited at all.
+
+If you want to set an admin user, you need to set the following variables:
+* `DOKU_DOCKER_ACL_POLICY` to `public`: the policy applied
+* `DOKU_DOCKER_ADMIN_NAME` to the user admin name
+* `DOKU_DOCKER_ADMIN_PASSWORD` to the user admin password
+* `DOKU_DOCKER_ADMIN_EMAIL` to the user admin email (Optional)
+
+Example:
+```bash
+docker run \
+  --name combo-site-default \
+  --rm \
+  -p 8081:80 \
+  -e DOKU_DOCKER_ACL_POLICY='public' \
+  -e DOKU_DOCKER_ADMIN_NAME='admin' \
+  -e DOKU_DOCKER_ADMIN_PASSWORD='welcome' \
+  -e DOKU_DOCKER_ADMIN_NAME='admin@example.com' \
+  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
+  ghcr.io/combostrap/dokuwiki:php8.3-v1
+```
+
+The above command:
+* publish the [ComboStrap default install website](https://github.com/ComboStrap/site-default)
+* and configure it with the admin user:
+  * name `admin`
+  * password `welcome`
+  * email `admin@example.com`
+
+
+### Mount a Volume to backup your data
+
+The important run parameter is the [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) to keep
 your data between restart.
 
-Note: If the [volume](#volume-content) is empty, after the run, it will be filled
-with a new dokuwiki installation. 
-You need to use the [DokuWiki's installer](https://www.dokuwiki.org/installer) to configure it.
+Note: If the [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) is empty, after the run, it will be filled
+with a new dokuwiki installation.
 
 Example:
 * Linux / Windows WSL
@@ -52,12 +86,9 @@ docker run \
 ```
 * On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
 
-On a desktop:
-* Dokuwiki would be available at: http://localhost:8080
-* and the installer at: http://localhost:8080/install.php
+On a desktop, Dokuwiki would be available at: http://localhost:8080 in readonly mode.
 
 
-## How to
 
 ### Choose the installed dokuwiki version
 
@@ -130,13 +161,14 @@ To disable this behavior, you need to set the `DOKU_DOCKER_DEFAULT_SITE` environ
 docker run -e DOKU_DOCKER_DEFAULT_SITE=false
 ```
 
-### Set your ComboStrap WebSite
+### Set your ComboStrap Git WebSite
 
 
-To defines the ComboStrap WebSite that this image should run, you need to set the `$DOKU_DOCKER_SITE` environment variable to a git URL.
+To defines the ComboStrap WebSite that this image should install, 
+you need to set the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
 
 ```bash
-docker run -e DOKU_DOCKER_SITE=https://github.com/ComboStrap/site-default.git
+docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-default.git
 ```
 
 ### Set in dev mode
@@ -145,24 +177,8 @@ By default, this image will run php in production mode.
 You can set it in dev mode via the `DOKU_DOCKER_ENV`
 
 ```bash
-docker run -e DOKU_DOCKER_ENV=dev
+docker run -e DOKU_DOCKER_ENV=dev ....
 ```
-
-## Volume Content
-
-The volume contains a whole dokuwiki installation.
-
-Why? We do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
-to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:backup)
-because it's too damn hard to keep the state of an installation.
-* Plugins does not use a version/release system.
-* You then need to back up the `lib` directory that contains the most code.
-* Configuration file may be scattered around. Example:
-  * [Interwiki Icon](https://www.dokuwiki.org/interwiki#configuring_interwiki_shortcut_icons)
-* Identification file are co-located with configuration file in the `conf` directory.
-* Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp)
-
-If you want to keep the size low, you need to perform cleanup administrative task.
 
 
 ## Tag
@@ -225,6 +241,23 @@ docker run \
   ghcr.io/combostrap/dokuwiki:php8.3-v1
 ```
 
+## FAQ
+### Why the volume contains a whole dokuwiki installation
+
+Why the volume contains a whole dokuwiki installation and we do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
+to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:backup)
+
+Because it's too damn hard to keep the state of an installation.
+* Plugins does not use a version/release system.
+* You then need to back up the `lib` directory that contains the most code.
+* Configuration file may be scattered around. Example:
+  * [Inter Wiki Icon](https://www.dokuwiki.org/interwiki#configuring_interwiki_shortcut_icons)
+* Identification file are co-located with configuration file in the `conf` directory.
+* Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp)
+
+If you want to keep the size low, you need to:
+* perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
+* or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
 
 ## Other related projects
 
