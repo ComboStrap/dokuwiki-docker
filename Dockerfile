@@ -92,6 +92,8 @@ ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
 #### Caddy
 EXPOSE 80
 COPY resources/conf/caddy/Caddyfile /Caddyfile
+#### Bash (to get the same env with `docker exec`)
+ADD --chmod=0644 resources/conf/bash/.bashrc /root/.bashrc
 
 ####################################
 # Dokuwiki Docker App Install

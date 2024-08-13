@@ -1,10 +1,13 @@
 #!/bin/bash
 
 # The dokuwiki docker command cli and function
+dd_echo(){
+  echo "DokuWiki Docker: $1"
+}
 
 # The first parameter is the git url
 dd_install_site() {
-    echo "Installing the site: $1"
+    dd_echo "Installing the site: $1"
     # The default globbing in bash does not include filenames starting with a . (ie hidden files)
     # We want to include the `.gitignore` to avoid including the whole dokuwiki software
     shopt -s dotglob
@@ -17,13 +20,13 @@ dd_install_site() {
     # Install Plugins
     PLUGINS_FILE="data/combo/instance/plugins.txt"
     if [[ -f $PLUGINS_FILE ]]; then
-      echo "Plugins Installation"
+      dd_echo "Plugins Installation"
       grep -v '^#' "$PLUGINS_FILE" |
           while IFS=' ' read -r PLUGIN_NAME PLUGIN_ARCHIVE_URL
           do
             # If PLUGIN_NAME is empty, it's an empty line
             if [ -n "$PLUGIN_NAME" ]; then
-              echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
+              dd_echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
               curl --fail -L "$PLUGIN_ARCHIVE_URL" -o "$PLUGIN_NAME.zip"
               mkdir -p "lib/plugins/$PLUGIN_NAME"
               bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME"
@@ -31,7 +34,7 @@ dd_install_site() {
             fi
           done
     else
-        echo "No plugin files found, skipping installation"
+        dd_echo "No plugin files found, skipping installation"
     fi
 
 }

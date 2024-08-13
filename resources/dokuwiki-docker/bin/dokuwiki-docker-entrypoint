@@ -48,18 +48,14 @@ done
 #############
 # Php Conf
 #############
-export PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-128M}
-export PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-$PHP_UPLOAD_MAX_FILESIZE}
-export PHP_MEMORY_LIMIT=${PHP_UPLOAD_LIMIT:-256M}
-export PHP_DATE_TIMEZONE=${PHP_DATE_TIMEZONE:-UTC}
-
+# See bashrc for the conf so that they are also passed in a `docker exec` command
 
 # Note: Theses default configs are customized by configuration files into the $PHP_INI_DIR/conf.d/ directory.
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
-  echo "Production Mode"
+  dd_echo "Production Mode"
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 else
-  echo "Development Mode"
+  dd_echo "Development Mode"
   mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 fi
 
@@ -79,52 +75,91 @@ if [[ ! -f doku.php ]]; then
     # Install is done by downloading
     # Download DokuWiki from the official website or from GitHub
 
-    echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
+    dd_echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
     # --no-same-owner so that the files have root as owner
     curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz \
         && tar --no-same-owner -xzf dokuwiki.tgz --strip-components=1 \
         && rm dokuwiki.tgz
 
 
-    echo "Backup the installed Inter wiki images"
+    dd_echo "Backup the installed Inter wiki images"
     # Move the default Inter wiki images to not get them in Git
     INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
     mkdir -p $INTER_WIKI_BACKUP_DIR
     mv lib/images/interwiki/* $INTER_WIKI_BACKUP_DIR
 
     ## Install the default website if a web site was not given
-    if [ -z "$DOKU_DOCKER_SITE" ] && [[ "${DOKU_DOCKER_DEFAULT_SITE}" != "false" ]] && [[ ! -d './.git' ]]; then
+    if [ -z "$DOKU_DOCKER_GIT_SITE" ] && [[ "${DOKU_DOCKER_DEFAULT_SITE}" != "false" ]] && [[ ! -d './.git' ]]; then
       dd_install_site https://github.com/ComboStrap/site-default.git
       # Remove git
       rm -rf .git
     fi
-
-    ## Copy the default ACL Policy
-    ## No need to go the the installer https://www.dokuwiki.org/installer
-    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/init-install/acl/public/* ./conf
 
 fi
 
 # Copy dokuwiki health and configuration
 if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION_FILE)" -ne $DOKUWIKI_DOCKER_VERSION ]; then
 
-    echo "Copying conf and health dokuwiki files"
-    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki/* .
+    dd_echo "Copying dokuwiki docker files"
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki-docker/* .
+    dd_echo "Copying dokuwiki specific files"
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki-docker/dokuwiki/* .
 
 fi
 
 ################
-# Git ComboStrap WebSite
+# Git WebSite
 ################
-if [ -n "$DOKU_DOCKER_SITE" ] && [[ ! -d './.git' ]]; then
-  echo "Installing WebSite from Git Repo: $DOKU_DOCKER_SITE"
-  dd_install_site "$DOKU_DOCKER_SITE"
+if [ -n "$DOKU_DOCKER_GIT_SITE" ] && [[ ! -d './.git' ]]; then
+  dd_echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
+  dd_install_site "$DOKU_DOCKER_GIT_SITE"
 fi
 
+################
+# Install (users.auth.php, local.conf and acl.auth.php)
+################
+# No need to go the the installer https://www.dokuwiki.org/installer
+# Default conf
+dd_echo "##############"
+DOKU_DOCKER_INSTALLATION=${DOKU_DOCKER_INSTALLATION:-readonly}
+dd_echo "$DOKU_DOCKER_INSTALLATION Installation configuration"
+if [[ ! -f conf/local.php ]]; then
+  dd_echo "conf/local.php: Dokuwiki Local conf not present copying a default one"
+  cp "$DOKUWIKI_DOCKER_HOME"/meta/install/local.php ./conf/local.php
+else
+  dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
+fi
+if [[ ! -f conf/acl.auth.php ]]; then
+  if [[ "${DOKU_DOCKER_INSTALLATION}" == "readonly" ]]; then
+      dd_echo "  * conf/acl.auth.php: Read only ACL configured"
+      cp "$DOKUWIKI_DOCKER_HOME"/meta/install/acl/readonly/* ./conf
+    else
+      dd_echo "  * conf/acl.auth.php: Public ACL configured"
+      cp "$DOKUWIKI_DOCKER_HOME"/meta/install/acl/public/* ./conf
+  fi
+else
+  dd_echo "  * conf/acl.auth.php: Dokuwiki Acl already present"
+fi
+if [[ ! -f conf/users.auth.php ]] && [[ $DOKU_DOCKER_INSTALLATION != "readonly" ]]; then
+  if [ -z "$DOKUWIKI_DOCKER_ADMIN_NAME" ]; then
+    dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin name is mandatory. Set it with the environment variable (DOKUWIKI_DOCKER_ADMIN_NAME) "
+    exit 1
+  fi;
+  if [ -z "$DOKUWIKI_DOCKER_PASSWORD" ]; then
+    dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin password is mandatory. Set it with the environment variable ($DOKUWIKI_DOCKER_PASSWORD) "
+    exit 1
+  fi
+  DOKUWIKI_DOCKER_ADMIN_EMAIL=${DOKUWIKI_DOCKER_ADMIN_EMAIL:-admin@localhost}
+  dd_echo "  * conf/users.auth.php: Creating the user $DOKUWIKI_DOCKER_ADMIN_NAME"
+  php $DOKUWIKI_DOCKER_HOME/bin/users.auth.init.php "$DOKUWIKI_DOCKER_USERNAME" "$DOKUWIKI_DOCKER_PASSWORD" "$DOKUWIKI_DOCKER_ADMIN_EMAIL"
+else
+  dd_echo "  * conf/users.auth.php: Nothing done (Already present or readonly installation)"
+fi
 
 ################
 # Start
 ################
 # https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint
 # Exec permits to respond to ctrl+c key and terminate the running process.
-exec docker-php-entrypoint "$@"
+# exec docker-php-entrypoint "$@"
+exec "$@"

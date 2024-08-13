@@ -6,11 +6,8 @@
 # so that Git does not see them as text file
 ##
 
-# Auto detect
-##   Handle line endings automatically for files detected as
-##   text and leave all files detected as binary untouched.
-##   This will handle all files NOT defined below.
-*                 text=auto eol=lf
+# all files LF
+* text=auto eol=lf
 
 
 # Graphics
