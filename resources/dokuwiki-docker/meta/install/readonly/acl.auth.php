@@ -19,3 +19,4 @@
 # delete 16
 
 *               @ALL        1
+*               @user       1

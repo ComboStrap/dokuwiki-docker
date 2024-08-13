@@ -3,7 +3,6 @@
 // Ref: https://raw.githubusercontent.com/dokuwiki/docker/main/root/var/www/html/health.php
 
 define('DOKU_UNITTEST', 1);
-if (!defined('DOKU_INC')) define('DOKU_INC', __DIR__ . '/dokuwiki/');
 
 header('Content-Type: text/plain; charset=utf-8');
 try {

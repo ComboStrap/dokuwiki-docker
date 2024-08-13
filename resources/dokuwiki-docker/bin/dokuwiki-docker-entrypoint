@@ -100,8 +100,8 @@ fi
 # Copy dokuwiki health and configuration
 if [[ ! -f $DOKUWIKI_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKUWIKI_DOCKER_VERSION_FILE)" -ne $DOKUWIKI_DOCKER_VERSION ]; then
 
-    dd_echo "Copying dokuwiki docker files"
-    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki-docker/* .
+    dd_echo "Copying Dokuwiki docker files into DokuWiki Home"
+    cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki-docker .
     dd_echo "Copying dokuwiki specific files"
     cp -r -f "$DOKUWIKI_DOCKER_HOME"/meta/dokuwiki-docker/dokuwiki/* .
 
@@ -123,38 +123,58 @@ fi
 dd_echo "##############"
 DOKU_DOCKER_INSTALLATION=${DOKU_DOCKER_INSTALLATION:-readonly}
 dd_echo "$DOKU_DOCKER_INSTALLATION Installation configuration"
+
 if [[ ! -f conf/local.php ]]; then
   dd_echo "conf/local.php: Dokuwiki Local conf not present copying a default one"
-  cp "$DOKUWIKI_DOCKER_HOME"/meta/install/local.php ./conf/local.php
+  cp $DOKUWIKI_DOCKER_HOME/meta/install/local.php ./conf/local.php
 else
   dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
 fi
-if [[ ! -f conf/acl.auth.php ]]; then
-  if [[ "${DOKU_DOCKER_INSTALLATION}" == "readonly" ]]; then
+
+if [[ "${DOKU_DOCKER_INSTALLATION}" == "readonly" ]]; then
+
+    if [[ ! -f conf/acl.auth.php ]]; then
       dd_echo "  * conf/acl.auth.php: Read only ACL configured"
-      cp "$DOKUWIKI_DOCKER_HOME"/meta/install/acl/readonly/* ./conf
+      cp $DOKUWIKI_DOCKER_HOME/meta/install/readonly/acl.auth.php ./conf/acl.auth.php
     else
+      dd_echo "  * conf/acl.auth.php: Nothing Done - Dokuwiki Acl already present"
+    fi
+
+    if [[ ! -f conf/users.auth.php ]]; then
+      cp -f $DOKUWIKI_DOCKER_HOME/meta/install/readonly/users.auth.php ./conf/users.auth.php
+      dd_echo "  * conf/users.auth.php: Empty User dictionary copied"
+    else
+      dd_echo "  * conf/users.auth.php: Nothing Done - Already present"
+    fi
+
+  else
+
+    if [[ ! -f conf/acl.auth.php ]]; then
       dd_echo "  * conf/acl.auth.php: Public ACL configured"
-      cp "$DOKUWIKI_DOCKER_HOME"/meta/install/acl/public/* ./conf
-  fi
-else
-  dd_echo "  * conf/acl.auth.php: Dokuwiki Acl already present"
+      cp $DOKUWIKI_DOCKER_HOME/meta/install/public/acl.auth.php ./conf/acl.auth.php
+    else
+      dd_echo "  * conf/acl.auth.php: Nothing done - already present"
+    fi
+
+    if [[ ! -f conf/users.auth.php ]]; then
+      if [ -z "$DOKUWIKI_DOCKER_ADMIN_NAME" ]; then
+        dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin name is mandatory. Set it with the environment variable (DOKUWIKI_DOCKER_ADMIN_NAME) "
+        exit 1
+      fi;
+      if [ -z "$DOKUWIKI_DOCKER_PASSWORD" ]; then
+        dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin password is mandatory. Set it with the environment variable ($DOKUWIKI_DOCKER_PASSWORD) "
+        exit 1
+      fi
+      DOKUWIKI_DOCKER_ADMIN_EMAIL=${DOKUWIKI_DOCKER_ADMIN_EMAIL:-admin@localhost}
+      dd_echo "  * conf/users.auth.php: Creating the user $DOKUWIKI_DOCKER_ADMIN_NAME"
+      php $DOKUWIKI_DOCKER_HOME/bin/users.auth.init.php "$DOKUWIKI_DOCKER_USERNAME" "$DOKUWIKI_DOCKER_PASSWORD" "$DOKUWIKI_DOCKER_ADMIN_EMAIL"
+    else
+      dd_echo "  * conf/users.auth.php: Nothing done - already present"
+    fi
+
 fi
-if [[ ! -f conf/users.auth.php ]] && [[ $DOKU_DOCKER_INSTALLATION != "readonly" ]]; then
-  if [ -z "$DOKUWIKI_DOCKER_ADMIN_NAME" ]; then
-    dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin name is mandatory. Set it with the environment variable (DOKUWIKI_DOCKER_ADMIN_NAME) "
-    exit 1
-  fi;
-  if [ -z "$DOKUWIKI_DOCKER_PASSWORD" ]; then
-    dd_echo "For an installation ($DOKU_DOCKER_INSTALLATION), the admin password is mandatory. Set it with the environment variable ($DOKUWIKI_DOCKER_PASSWORD) "
-    exit 1
-  fi
-  DOKUWIKI_DOCKER_ADMIN_EMAIL=${DOKUWIKI_DOCKER_ADMIN_EMAIL:-admin@localhost}
-  dd_echo "  * conf/users.auth.php: Creating the user $DOKUWIKI_DOCKER_ADMIN_NAME"
-  php $DOKUWIKI_DOCKER_HOME/bin/users.auth.init.php "$DOKUWIKI_DOCKER_USERNAME" "$DOKUWIKI_DOCKER_PASSWORD" "$DOKUWIKI_DOCKER_ADMIN_EMAIL"
-else
-  dd_echo "  * conf/users.auth.php: Nothing done (Already present or readonly installation)"
-fi
+
+
 
 ################
 # Start

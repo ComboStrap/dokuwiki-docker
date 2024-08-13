@@ -5,4 +5,4 @@
  * This ensures that DOKU_INC is is always pointing to the correct location within the container,
  * even when the entry point is a plugin.
  */
-if (!defined('DOKU_INC')) define('DOKU_INC', __DIR__ . '/dokuwiki/');
+if (!defined('DOKU_INC')) define('DOKU_INC', __DIR__ . '/../');
