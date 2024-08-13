@@ -7,7 +7,7 @@ This repository contains the `Dokuwiki in Docker` image.
 
 Get a Dokuwiki installation with a website in a single line of command.
 
-To get a [Dokuwiki server](https://dokuwiki.org) at http://localhost:8080, execute:
+To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Default Site](https://github.com/ComboStrap/site-default) at http://localhost:8080, execute:
 ```bash
 # bash
 docker run \
