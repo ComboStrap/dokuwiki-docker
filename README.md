@@ -15,7 +15,7 @@ docker run \
   --rm \
   -p 8080:80 \
   -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 
@@ -54,7 +54,7 @@ docker run \
   -e DOKU_DOCKER_ADMIN_PASSWORD='welcome' \
   -e DOKU_DOCKER_ADMIN_NAME='admin@example.com' \
   -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 The above command:
@@ -82,7 +82,7 @@ docker run \
   --rm \
   -p 8080:80 \
   -v $PWD:/var/www/html \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 * On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
 
@@ -103,7 +103,7 @@ docker run \
   -p 8080:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
   -v $PWD:/var/www/html \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 ### Check if php-fpm is alive (health)
@@ -209,7 +209,7 @@ docker run \
   --user 1000:1000 \
   --rm \
   -p 8081:80 \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 ### Get a Bash Shell in the container
@@ -222,21 +222,30 @@ Example:
 docker exec -ti combo-site-default bash -l
 ```
 
-Why? Only login shell will run the [system env script](resources/conf/bash/dokuwiki-docker.sh) located in `/etc/profile.d/` directory.
+Why? Only login shell will run the [system env script](resources/conf/bash/dokuwiki-docker-env.sh) located in `/etc/profile.d/` directory.
 
-## Tag
+### Update the image
 
-### Syntax
+We support for now only one tag by php version, therefore you need to delete the image before pulling it again
 
-A tag has the syntax
+Example for `php8.3`
 ```bash
-phpX.X-vX
-# example
-php8.3-v1
+docker rmi ghcr.io/combostrap/dokuwiki:php8.3-latest
+docker pull ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+
+
+## Tag 
+
+We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-image)
+
+```bash
+php8.3-latest
 ```
 where:
 * `phpX.X` is the php version used
-* `vX` is the version of this image
+* `latest` is the version of this image
+
 
 Dokuwiki is installed if not found on the volume.
 See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwiki-version)
@@ -247,9 +256,9 @@ All image contains:
 * php-fpm and opcache for performance
 * caddy as webserver
 
-### Tag List
+### Image List
 
-* [php8.3-v1](Dockerfile) - [Kaos version](https://www.dokuwiki.org/changes#release_2024-02-06a_kaos) with php 8.3
+The list of image is available on [GitHub](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki) 
 
 
 ## Support
@@ -262,7 +271,7 @@ ie `DON'T` do that
 ```dos
 docker run ^
   -v c:\home\username\your-site:/var/www/html ^
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 Mounting a Windows folder into a Docker container is always slow no matter how you do it.
@@ -281,7 +290,7 @@ You should then:
 ```bash
 docker run \
   -v ~\your-site:/var/www/html \
-  ghcr.io/combostrap/dokuwiki:php8.3-v1
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 ## FAQ
