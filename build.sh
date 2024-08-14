@@ -14,7 +14,7 @@ docker build . -t ghcr.io/combostrap/dokuwiki:"$VERSION" # || exit 1
 # Run. See README
 # Otherwise for combo dev
 # docker run --name dokuwiki --rm -p 8080:80 -e DOKU_DOCKER_ENV=dev -v 'c:\dokuwiki':/var/www/html ghcr.io/combostrap/dokuwiki:php8.3-last
-# docker run --name dokuwiki -it --rm ghcr.io/combostrap/dokuwiki:php8.3-v1 bash
+# docker run --name dokuwiki -it --rm ghcr.io/combostrap/dokuwiki:php8.3-latest bash
 
 # Push
 # docker push ghcr.io/combostrap/dokuwiki:php8.3-latest

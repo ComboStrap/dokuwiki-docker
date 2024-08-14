@@ -55,8 +55,9 @@ done
 # Php Conf
 #############
 # See dokuwiki-docker-env for the conf so that they are also passed in a `docker exec` command
-
 # Note: Theses default configs are customized by configuration files into the $PHP_INI_DIR/conf.d/ directory.
+
+DOKU_DOCKER_ENV=${DOKU_DOCKER_ENV:-prod}
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
   dd_echo "Production Mode"
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
