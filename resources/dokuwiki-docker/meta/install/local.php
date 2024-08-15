@@ -9,3 +9,4 @@ $conf['lang'] = 'en';
 $conf['license'] = 'cc-by-sa';
 $conf['useacl'] = 1;
 $conf['disableactions'] = 'register';
+$conf['superuser'] = '@admin';
