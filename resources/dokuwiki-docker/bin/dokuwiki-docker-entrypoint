@@ -77,6 +77,8 @@ export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 #############
 # https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
+# The path to the dokuwiki data
+export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
 if [[ ! -f doku.php ]]; then
 
     # Install is done by downloading
@@ -88,6 +90,16 @@ if [[ ! -f doku.php ]]; then
         && tar --no-same-owner -xzf dokuwiki.tgz --strip-components=1 \
         && rm dokuwiki.tgz
 
+    # If a user want to have `data` as namespace. ie https://dokuwiki.com/data/mypage
+    # it needs to set the `savedir` (https://www.dokuwiki.org/config:savedir) to another value than data
+    # otherwise it's refused by the web server (ie Caddyfile)
+    # as the whole dokuwiki data directory is forbidden
+    if [[ "$DOKU_DOCKER_SAVE_DIR" != "data" ]]; then
+      dd_echo "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
+      mv data/* "$DOKU_DOCKER_SAVE_DIR/"
+      # rf because media and pages directory will not move
+      rm -rf data
+    fi
 
     dd_echo "Backup the installed Inter wiki images"
     # Move the default Inter wiki images to not get them in Git
@@ -104,7 +116,18 @@ if [[ ! -f doku.php ]]; then
 
 fi
 
-# Copy dokuwiki health and configuration
+#############################################
+# Dokuwiki Patch
+#############################################
+DOKUWIKI_PATCH_DIR="$DOKU_DOCKER_HOME/meta/dokuwiki-patches/${DOKUWIKI_VERSION}"
+if [[ -d "$DOKUWIKI_PATCH_DIR" ]]; then
+  dd_echo "Copying Dokuwiki Patch for version ${DOKUWIKI_VERSION}"
+  cp -r -f "$DOKUWIKI_PATCH_DIR" .
+fi
+
+#############################################
+# Dokuwiki Docker Patch (health script and configuration)
+#############################################
 if [[ ! -f $DOKU_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKU_DOCKER_VERSION_FILE)" -ne $DOKU_DOCKER_VERSION ]; then
 
     dd_echo "Copying Dokuwiki docker files into DokuWiki Home"
@@ -123,6 +146,11 @@ if [ -n "$DOKU_DOCKER_GIT_SITE" ] && [[ ! -d './.git' ]]; then
 fi
 
 ################
+# Install Plugins
+################
+dd_install_plugins
+
+################
 # Install (users.auth.php, local.conf and acl.auth.php)
 ################
 # The https://www.dokuwiki.org/installer but somewhat scripted
@@ -130,6 +158,15 @@ dd_echo "##############"
 # The policy of the [installer](https://www.dokuwiki.org/installer)
 DOKU_DOCKER_ACL_POLICY=${DOKU_DOCKER_ACL_POLICY:-readonly}
 dd_echo "Installation configuration with the ACL policy '$DOKU_DOCKER_ACL_POLICY'"
+
+## Local.php should be first
+# as it's used by the script when creating the user file
+if [[ ! -f conf/local.php ]]; then
+  dd_echo "conf/local.php: Dokuwiki Local conf not present copying a default one"
+  cp $DOKU_DOCKER_HOME/meta/install/local.php ./conf/local.php
+else
+  dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
+fi
 
 case "$DOKU_DOCKER_ACL_POLICY" in
     # ReadOnly Wiki (read for everyone, write and upload for no one)
@@ -181,13 +218,6 @@ case "$DOKU_DOCKER_ACL_POLICY" in
       exit 1
     ;;
 esac
-
-if [[ ! -f conf/local.php ]]; then
-  dd_echo "conf/local.php: Dokuwiki Local conf not present copying a default one"
-  cp $DOKU_DOCKER_HOME/meta/install/local.php ./conf/local.php
-else
-  dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
-fi
 
 
 dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)"

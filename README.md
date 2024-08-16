@@ -26,9 +26,12 @@ You got out of the box:
   * You can:
     * [disable it](#disable-automatic-default-website-installation)
     * or [set your own](#set-your-combostrap-git-website)
-* [nice URL rewrite ](https://www.dokuwiki.org/rewrite)
-* [Php Fpm](https://www.php.net/manual/en/install.fpm.php) and [OpCache](https://www.php.net/manual/en/book.opcache.php) for performance
-
+* [Nice URL rewrite ](https://www.dokuwiki.org/rewrite)
+* Performance:
+  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) 
+  * [OpCache](https://www.php.net/manual/en/book.opcache.php)
+* [Automatic Plugins Installation](https://combostrap.com/admin/combostrap-website-yolv2qw6#plugins)
+* [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 
 ## How to
 
@@ -224,6 +227,27 @@ docker exec -ti combo-site-default bash -l
 
 Why? Only login shell will run the [system env script](resources/conf/bash/dokuwiki-docker-env.sh) located in `/etc/profile.d/` directory.
 
+### Change the savedir configuration
+
+If you want to use `data` has a namespace (ie `https://example.com/data/yourpage`), you can't 
+by default because the [savedir](https://www.dokuwiki.org/config:savedir) 
+is forbidden for security reasons by the [web server](resources/conf/caddy/Caddyfile)
+
+To use `data` as a namespace, you need to
+* rename the directory `data` to `dokudata`
+* set the `savedir` configuration to `dokudata` in your `conf/local.php` file
+```php
+$conf['savedir'] = './dokudata';
+```
+* set the environment `DOKU_DOCKER_SAVE_DIR` to `dokudata` in a `docker run`
+```bash
+docker run \
+  -e DOKU_DOCKER_SAVE_DIR='dokudata' \
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+
+Note: You can change the `dokudata` value to whatever you want.
+
 ### Update the image
 
 We support for now only one tag by php version, therefore you need to delete the image before pulling it again
@@ -310,6 +334,12 @@ Because it's too damn hard to keep the state of an installation.
 If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
 * or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
+
+### How to update the search index
+
+```bash
+php bin/indexer.php -c
+```
 
 ## Other related projects
 

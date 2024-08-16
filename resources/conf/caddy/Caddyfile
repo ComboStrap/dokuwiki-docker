@@ -21,8 +21,9 @@
     route {
 
         # Forbidden Path
+        # data is an env to be able to use data as namespace DOKU_DOCKER_SAVE_DIR
         @forbidden {
-            path /data/* /conf/* /bin/* /inc/*
+            path /${DOKU_DOCKER_SAVE_DIR}/* /conf/* /bin/* /inc/*
         }
         handle @forbidden {
             respond * 403
