@@ -13,7 +13,7 @@ To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Default Si
 docker run \
   --name combo-site-default \
   --rm \
-  -p 8080:80 \
+  -p 8081:80 \
   -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
@@ -88,13 +88,13 @@ cd ~/your-site
 docker run \
   --name combo-site-default \
   --rm \
-  -p 8080:80 \
+  -p 8081:80 \
   -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 * On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
 
-On a desktop, Dokuwiki would be available at: http://localhost:8080 in readonly mode.
+On a desktop, Dokuwiki would be available at: http://localhost:8081 in readonly mode.
 
 
 
@@ -108,7 +108,7 @@ Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwi
 docker run \
   --name combo-site-default \
   --rm \
-  -p 8080:80 \
+  -p 8081:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
   -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
