@@ -20,7 +20,7 @@ docker run \
 
 ## Table of Content
 
-The table of content (TOC) is available at the right corner of this document.
+The table of content (TOC) is available on GitHub at the right corner of this document.
 
 ![](doc/github_toc.png)
 
@@ -322,11 +322,43 @@ docker run \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
+### Use git as storage backup using SSH
+
+* Create a private SSH key and register it in your Git Provider. Example: [GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+* At the `run` command
+  * Mount the SSK key with a standard default name (ie for instance `id_ed25519`) in the `~/ssh` directory.
+  * Set the Git URI to an SSH one `git@github.com:namespace/repo.git`
+```bash
+docker run \
+  -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git  
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+* Get into your container / pod
+```bash
+# docker
+docker exec -it containerName bash -l
+# Kubernetes
+kubectl exec -it podName -- bash
+kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash
+```
+* Set the Git Author Info
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+* And use git as normal
+```bash
+git status
+git add .
+git commit -m "My Commit message"
+git push
+```
+
 ## FAQ
 ### Why the volume contains a whole dokuwiki installation
 
-Why the volume contains a whole dokuwiki installation and we do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
-to keep backup data as specified in the [backup](https://www.dokuwiki.org/faq:backup)
+Why the volume contains a whole dokuwiki installation, and we do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
+to keep backup data as specified in the [oficial backup documentation](https://www.dokuwiki.org/faq:backup)
 
 Because it's too damn hard to keep the state of an installation.
 * Plugins does not use a version/release system.
