@@ -18,6 +18,11 @@ docker run \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
+## Table of Content
+
+The table of content (TOC) is available at the right corner of this document.
+
+![](doc/github_toc.png)
 
 ## Features
 
