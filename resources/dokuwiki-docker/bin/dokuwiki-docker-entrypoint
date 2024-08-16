@@ -220,12 +220,25 @@ case "$DOKU_DOCKER_ACL_POLICY" in
 esac
 
 
-dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)"
+################
+# Executing User
+################
+dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)\n"
+
+################
+# Update search index
+################
+DOKU_DOCKER_SEARCH_INDEX=${DOKU_DOCKER_SEARCH_INDEX:-on}
+if [[ "$DOKU_DOCKER_SEARCH_INDEX" != "off" ]]; then
+  dd_echo "Updating search index"
+  php bin/indexer.php -q
+else
+  dd_echo "Automatic Update of search index disabled"
+fi
 
 ################
 # Start
 ################
 # https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint
 # Exec permits to respond to ctrl+c key and terminate the running process.
-# exec docker-php-entrypoint "$@"
-exec "$@"
+exec docker-php-entrypoint "$@"

@@ -48,6 +48,8 @@ COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 ####################################
 # Healthcheck
 # The file name is the standard name configuration in php-fpm
+# It's used only by Docker
+# For Kubernetes, the probes must be defined in the manifest
 ####################################
 HEALTHCHECK --timeout=5s \
     CMD curl --silent --fail-with-body http://localhost/dokuwiki-docker/ping.php || exit 1

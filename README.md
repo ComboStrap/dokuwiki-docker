@@ -27,16 +27,21 @@ The table of content (TOC) is available on GitHub at the right corner of this do
 ## Features
 
 You got out of the box:
-* a default [Website](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
+* [Website instance](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
   * You can:
     * [disable it](#disable-automatic-default-website-installation)
     * or [set your own](#set-your-combostrap-git-website)
 * [Nice URL rewrite ](https://www.dokuwiki.org/rewrite)
-* Performance:
-  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) 
-  * [OpCache](https://www.php.net/manual/en/book.opcache.php)
+* [Automatic Search Index Update](#how-to-disable-the-automatic-update-of-the-search-index)
 * [Automatic Plugins Installation](https://combostrap.com/admin/combostrap-website-yolv2qw6#plugins)
+* [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
+* [Monitoring Endpoint](#monitor-php-fpm-with-status-on-localhost-only)
+* Performance:
+  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php)
+  * [OpCache](https://www.php.net/manual/en/book.opcache.php)
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
+* [Dev Mode](#set-in-dev-mode)
+
 
 ## How to
 
@@ -73,30 +78,30 @@ The above command:
   * email `admin@example.com`
 
 
-### Mount a Volume to backup your data
+### Mount a Volume
 
-The important run parameter is the [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) to keep
-your data between restart.
+You may mount a [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) 
+to keep your installation intact between restart.
 
-Note: If the [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) is empty, after the run, it will be filled
-with a new dokuwiki installation.
 
 Example:
-* Linux / Windows WSL
+* Desktop Linux / Windows WSL
 ```bash
 cd ~/your-site
 docker run \
   --name combo-site-default \
   --rm \
+  --user 1000:1000 \
   -p 8081:80 \
   -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 * On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
 
-On a desktop, Dokuwiki would be available at: http://localhost:8081 in readonly mode.
+On a desktop, Dokuwiki would be available at: http://localhost:8081 
 
-
+Note: If the [volume](#why-the-volume-contains-a-whole-dokuwiki-installation) is empty, after the run, it will be filled
+with a new dokuwiki installation.
 
 ### Choose the installed dokuwiki version
 
@@ -110,21 +115,62 @@ docker run \
   --rm \
   -p 8081:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
-  -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
-### Check if php-fpm is alive (health)
+### Get Healthcheck / Liveness / Probes / Container State
 
-`php-fpm` has a [configuration](resources/conf/php-fpm/www.conf) `ping.path` set to `/ping`.
-The response is given by the configuration `ping.response`.
+If you wish to set a healthcheck point, you may use the [ping.php endpoint](resources/dokuwiki-docker/meta/dokuwiki-docker/ping.php) 
 
-Example: `http://localhost:8081/php-fpm/ping`
+ie `/dokuwiki-docker/ping.php`
 
-### Check if dokuwiki is alive (health)
+Example:
+* in a Kubernetes manifest
+```yaml
+containers:
+  - name: container-name
+    # Startup Probe: Used to check if the application has started before starting the other probes
+    # periodSeconds * failureThreshold = 10 * 10 = 100 seconds to starts
+    startupProbe:
+      httpGet:
+        path: /dokuwiki-docker/ping.php
+        port: 80
+      # 5 seconds after the start
+      initialDelaySeconds: 5
+      # The probe is performed every 55 second
+      periodSeconds: 10
+      # after 3 failed prob, the container is considered unhealthy.
+      failureThreshold: 10
+      # after 1 successful prob, the container is considered healthy.
+      successThreshold: 1
+    # Readiness Probe: Checks if the app is ready to serve traffic.
+    # If it fails, the pod is removed from the service endpoints.
+    # Used also in rollout
+    readinessProbe:
+      httpGet:
+        path: /dokuwiki-docker/ping.php
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+    # livenessProbe Probe
+    # If it fails, the pod is restarted
+    livenessProbe:
+      httpGet:
+        path: /dokuwiki-docker/ping.php
+        port: 80
+      initialDelaySeconds: 5
+      periodSeconds: 10
+      failureThreshold: 3
+      successThreshold: 1
+```
+* in docker: the `HEALTCHECK` is already defined in the [Dockerfile](Dockerfile)
 
 
-Example: `http://localhost:8081/dokuwiki-docker/ping.php`
+Note that you can also check the healthcheck of Php-Fpm at `http://localhost:8081/php-fpm/ping` 
+(thanks to the `ping.path` and `ping.response` [configurations](resources/conf/php-fpm/www.conf))
+
 
 ### Monitor php-fpm with status on localhost only
 
@@ -159,7 +205,7 @@ For the documentation over the data and usage, see the [configuration file](reso
 ### Disable Automatic Default WebSite Installation
 
 By default, this image will [install the default ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-5gxpcdgy#default_website)
-automatically.
+automatically after the initial Dokuwiki Installation.
 
 To disable this behavior, you need to set the `DOKU_DOCKER_DEFAULT_SITE` environment variable to `false`
 
@@ -169,19 +215,21 @@ docker run -e DOKU_DOCKER_DEFAULT_SITE=false
 
 ### Set your ComboStrap Git WebSite
 
-
 To defines the ComboStrap WebSite that this image should install, 
 you need to set the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
 
+Example:
 ```bash
 docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-default.git
 ```
 
 ### Set in dev mode
 
-By default, this image will run php in production mode.
-You can set it in dev mode via the `DOKU_DOCKER_ENV`
+By default, this image will run `php` in production mode.
+You can set it in dev mode via the `DOKU_DOCKER_ENV` to see warning 
+and other alerts.
 
+Example:
 ```bash
 docker run -e DOKU_DOCKER_ENV=dev ....
 ```
@@ -191,7 +239,7 @@ docker run -e DOKU_DOCKER_ENV=dev ....
 Php can be configured via environment variables.
 
 The convention is that you need to:
-* capitilze the configuration name 
+* capitalize the configuration name 
 * replace all separator by `_`
 * and add `PHP_` as prefix.
 
@@ -227,6 +275,8 @@ you need to create a login shell with the `-l` flag
 
 Example:
 ```bash
+docker exec -ti your-container-name bash -l
+# example
 docker exec -ti combo-site-default bash -l
 ```
 
@@ -263,6 +313,60 @@ docker rmi ghcr.io/combostrap/dokuwiki:php8.3-latest
 docker pull ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
+### Commit and push changes from your server container
+
+You can make change online from your server container 
+and push them to your git repository.
+
+To make this happen, you need to perform the following configuration:
+* Create a private SSH key and register it in your Git Provider. Example: [GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+* At the `run` command
+  * Mount the private SSH key with a standard default name (ie for instance `id_ed25519`) in the `~/ssh` directory.
+  * Set the Git URI to an SSH one.; ie `git@github.com:namespace/repo.git`, not `https://`
+```bash
+docker run \
+  -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git  
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+* Get into your container / pod
+```bash
+# docker
+docker exec -it containerName bash -l
+# Kubernetes
+kubectl exec -it podName -- bash
+kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash
+```
+* Set the Git Author Info
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+* You can now use git as normal and push any changes
+```bash
+git status
+git add .
+git commit -m "My Commit message"
+git push
+```
+
+### How to disable the automatic update of the search index
+
+When a pod/container is starting the [Search Index](https://www.dokuwiki.org/search#some_background_on_the_searchindex)
+is updated, otherwise any search or [Combo SQL](https://combostrap.com/templating-markup/how-to-define-your-data-set-with-sql-55fkwj0m)
+would not return any data.
+
+If you wish to disable this automatic update, you need to set the environment variable  `DOKU_DOCKER_SEARCH_INDEX` to `off`
+
+Example:
+```bash
+docker run \
+  -e DOKU_DOCKER_SEARCH_INDEX='off' \
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+
+Performance:
+* In case of rollout, this extra processing should not impact the availability of your container if you set the [readiness probes](#get-healthcheck--liveness--probes--container-state)
+* If the rollout takes too long, you need to set up a [volume](#mount-a-volume) so that the index is only updated and not created from scratch.
 
 ## Tag 
 
@@ -282,13 +386,14 @@ See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwik
 ### Components
 
 All image contains:
-* php-fpm and opcache for performance
-* caddy as webserver
+* [Php-fpm](https://www.php.net/manual/en/install.fpm.php) for php execution
+* [Opcache](https://www.php.net/manual/en/book.opcache.php) for php cache compilation
+* [Caddy](https://caddyserver.com/docs/caddyfile/directives/php_fastcgi) as webserver
+* [Supervisor](http://supervisord.org/) as process manager
 
 ### Image List
 
-The list of image is available on [GitHub](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki) 
-
+The list of images is available on [GitHub](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki) 
 
 ## Support
 ### Poor Windows Perf with Local Directory Volume 
@@ -322,37 +427,7 @@ docker run \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
-### Use git as storage backup using SSH
-
-* Create a private SSH key and register it in your Git Provider. Example: [GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-* At the `run` command
-  * Mount the SSK key with a standard default name (ie for instance `id_ed25519`) in the `~/ssh` directory.
-  * Set the Git URI to an SSH one `git@github.com:namespace/repo.git`
-```bash
-docker run \
-  -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git  
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
-```
-* Get into your container / pod
-```bash
-# docker
-docker exec -it containerName bash -l
-# Kubernetes
-kubectl exec -it podName -- bash
-kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash
-```
-* Set the Git Author Info
-```bash
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-```
-* And use git as normal
-```bash
-git status
-git add .
-git commit -m "My Commit message"
-git push
-```
+ 
 
 ## FAQ
 ### Why the volume contains a whole dokuwiki installation
@@ -372,11 +447,7 @@ If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
 * or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
 
-### How to update the search index
 
-```bash
-php bin/indexer.php -c
-```
 
 ## Other related projects
 
