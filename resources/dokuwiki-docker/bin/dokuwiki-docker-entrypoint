@@ -139,8 +139,9 @@ fi
 
 ################
 # Git WebSite
-################
-if [ -n "$DOKU_DOCKER_GIT_SITE" ] && [[ ! -d './.git' ]]; then
+###############
+DOKU_DOCKER_GIT_SITE=${DOKU_DOCKER_GIT_SITE:-}
+if [ "$DOKU_DOCKER_GIT_SITE" != "" ] && [[ ! -d './.git' ]]; then
   dd_echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
   dd_install_site "$DOKU_DOCKER_GIT_SITE"
 fi
@@ -224,6 +225,25 @@ esac
 # Executing User
 ################
 dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)\n"
+
+#####################
+# Php Info Security
+# The php info script should be available only from the admin user
+# because it can show environment variables
+#####################
+DOKU_DOCKER_ADMIN_NAME=${DOKU_DOCKER_ADMIN_NAME:-admin}
+if [ -z "$DOKU_DOCKER_ADMIN_PASSWORD" ]; then
+  dd_echo "No admin password found. Deleting phpinfo.php"
+  # No password set, no phpinfo should be available
+  rm dokuwiki-docker/phpinfo.php
+  # Random value as the
+  DOKU_DOCKER_ADMIN_PASSWORD=$(head /dev/urandom | tr -dc A-Za-z0-9 | head -c 20)
+fi;
+export DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH;
+DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH=$(caddy hash-password --plaintext "$DOKU_DOCKER_ADMIN_PASSWORD")
+# We can't unset the clear password as the password is also used
+# in clear in the supervisor conf file
+# unset DOKU_DOCKER_ADMIN_PASSWORD
 
 ################
 # Update search index

@@ -41,7 +41,9 @@ You got out of the box:
   * [OpCache](https://www.php.net/manual/en/book.opcache.php)
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
-
+* Search Engine Ready:
+  * [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
+* [Proxy Ready to detect HTTPS in Docker, Kubernetes environment](#is-the-image-proxy-ready)
 
 ## How to
 
@@ -65,7 +67,7 @@ docker run \
   -e DOKU_DOCKER_ACL_POLICY='public' \
   -e DOKU_DOCKER_ADMIN_NAME='admin' \
   -e DOKU_DOCKER_ADMIN_PASSWORD='welcome' \
-  -e DOKU_DOCKER_ADMIN_NAME='admin@example.com' \
+  -e DOKU_DOCKER_ADMIN_EMAIL='admin@example.com' \
   -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
@@ -249,6 +251,16 @@ docker run -e PHP_DATE_TIMEZONE=UTC ....
 ```
 
 All actual possibles configurations can be seen in the [php dokuwiki-docker.ini files](resources/conf/php/dokuwiki-docker.ini)
+
+### Get Php Info Endpoint
+
+To see the actual configuration, you can hit the endpoint: 
+
+http://localhost:8081/dokuwiki-docker/phpinfo.php
+
+This endpoint is protected by the admin user credentials. 
+If you want to get access, you need to [set the admin user](#set-an-admin-user)
+
 
 ### Run as the host user
 
@@ -447,6 +459,24 @@ If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
 * or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
 
+### Is the image Proxy Ready?
+
+Yes. 
+
+If you set your image behind a proxy, the Caddy redirection
+[trusts all proxy](https://caddyserver.com/docs/caddyfile/options#trusted-proxies) 
+that are in a private range.
+
+`192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
+
+### Why my sitemap is not generating URL with https?
+
+DokuWiki detects ssl with the [is_ssl](https://github.com/dokuwiki/dokuwiki/blob/a09f9f21cb0c1d60c498a0945989b20f2b3f00a7/inc/init.php#L543)
+function. 
+
+You should make sure that:
+* the [trusted proxy conf](https://www.dokuwiki.org/config:trustedproxy) is not empty (By default, it's not)
+* the `HTTP_X_FORWARDED_PROTO` header is forwarded if you use a proxy. This image [do it for all proxy in a private range](#is-the-image-proxy-ready).
 
 
 ## Other related projects

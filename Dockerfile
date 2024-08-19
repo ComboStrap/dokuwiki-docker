@@ -92,7 +92,10 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # If you want to expose the PHP-FPM port (default 9000), see the `listen.allowed_clients` conf.
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
+ADD --chmod=0644 resources/conf/php-fpm/php-fpm.conf /usr/local/etc/
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
+RUN rm /usr/local/etc/php-fpm.d/docker.conf
+RUN rm /usr/local/etc/php-fpm.d/zz-docker.conf
 RUN chmod 0777 /var/log # Gives permission to the running user to create log
 RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to create php ini file
 #### Caddy

@@ -20,10 +20,20 @@
     # https://caddyserver.com/docs/caddyfile/directives/route
     route {
 
+        # We secure the phpinfo script because
+        # you can see the environment variables
+        # that have secrets and other wild info
+        @phpinfo {
+            path /dokuwiki-docker/phpinfo.php
+        }
+        basicauth @phpinfo {
+            {$DOKU_DOCKER_ADMIN_NAME} {$DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH}
+        }
+
         # Forbidden Path
         # data is an env to be able to use data as namespace DOKU_DOCKER_SAVE_DIR
         @forbidden {
-            path /${DOKU_DOCKER_SAVE_DIR}/* /conf/* /bin/* /inc/*
+            path /{$DOKU_DOCKER_SAVE_DIR}/* /conf/* /bin/* /inc/*
         }
         handle @forbidden {
             respond * 403
@@ -100,6 +110,10 @@
     ###############
     # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
     # handles PHP files using FastCGI
-    php_fastcgi 127.0.0.1:9000
+    php_fastcgi 127.0.0.1:9000 {
+        # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+        # From private ranges proxy (Used in Kubernetes/docker case)
+        trusted_proxies private_ranges
+    }
 
 }

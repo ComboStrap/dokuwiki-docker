@@ -3,16 +3,22 @@
  * Default Values
  */
 
+
 /**
- * The docker instance generally run behind a proxy
- * that serves the certificate in http mode
- * When generating the sitemap, if the base url is not
- * set, the sitemap will generate http url
- * The base url needs to be set
- * https://www.dokuwiki.org/config:baseurl
- * Example: https://www.yourserver.com:port
+ * Enable sitemap
  */
-$baseUrl = getenv('DOKU_DOCKER_BASE_URL');
-if ($baseUrl !== false) {
-    $conf['baseurl'] = $baseUrl;
-}
+$conf['sitemap'] = 5;
+
+/**
+ * Note if we want to allow setting Dokuwiki Conf, we should do the following
+ *
+ *  $conf['baseurl'] = $_SERVER['DOKU_DOCKER_BASE_URL'] ?? '';
+ *
+ * the syntax was taken from here
+ * https://forum.dokuwiki.org/d/19800-use-environment-variables-for-configuration-in-localphp
+ * but there is no env due to the config
+ * https://www.php.net/manual/en/ini.core.php#ini.variables-order
+ * we use the SERVER variable
+ */
+
+
