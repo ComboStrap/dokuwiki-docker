@@ -313,7 +313,7 @@ docker rmi ghcr.io/combostrap/dokuwiki:php8.3-latest
 docker pull ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
-### Commit and push changes from your server container
+### Commit and push changes from your server container to your Git Repository
 
 You can make change online from your server container 
 and push them to your git repository.
@@ -333,8 +333,8 @@ docker run \
 # docker
 docker exec -it containerName bash -l
 # Kubernetes
-kubectl exec -it podName -- bash
-kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash
+kubectl exec -it podName -- bash -l
+kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash -l
 ```
 * Set the Git Author Info
 ```bash
