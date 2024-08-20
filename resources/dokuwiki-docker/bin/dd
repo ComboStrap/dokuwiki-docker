@@ -21,9 +21,11 @@ dd_install_site() {
     shopt -s dotglob
     # safe directory to resolve `fatal: detected dubious ownership in repository at '/var/www/html'`
     git config --global --add safe.directory "$PWD"
-    git clone "$1" temp
-    cp -rf temp/* .
-    rm -rf temp
+    # Create a temp directory without any conflict
+    TEMP_DIR=$(mktemp -d)
+    git clone "$1" "$TEMP_DIR"
+    mv -f "$TEMP_DIR"/* .
+    rm -rf "$TEMP_DIR"
 
 }
 
