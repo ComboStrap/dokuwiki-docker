@@ -19,10 +19,7 @@ source "$SCRIPT_DIR/dd"
 # * Conf: php-fpm and php
 # Note: the current directory is /var/www/html
 #############################################
-
 DOKU_DOCKER_HOME=/opt/dokuwiki-docker
-DOKU_DOCKER_VERSION=1
-DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
 
 #############################################
 # Env
@@ -126,16 +123,19 @@ if [[ -d "$DOKUWIKI_PATCH_DIR" ]]; then
 fi
 
 #############################################
-# Dokuwiki Docker Patch (health script and configuration)
+# Dokuwiki Docker (health script and configuration)
 #############################################
-if [[ ! -f $DOKU_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKU_DOCKER_VERSION_FILE)" -ne $DOKU_DOCKER_VERSION ]; then
+# We copy them each time, we don't handle the version anymore
+# Old code:
+# DOKU_DOCKER_VERSION=1
+# DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
+# if [[ ! -f $DOKU_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKU_DOCKER_VERSION_FILE)" -ne $DOKU_DOCKER_VERSION ]; then
+dd_echo Dokuwiki docker
+dd_echo "  * Copying Dokuwiki docker extra files"
+cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker .
+dd_echo "  * Copying Dokuwiki hook files"
+cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker/dokuwiki/* .
 
-    dd_echo "Copying Dokuwiki docker files into DokuWiki Home"
-    cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker .
-    dd_echo "Copying dokuwiki specific files"
-    cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker/dokuwiki/* .
-
-fi
 
 ################
 # Git WebSite
