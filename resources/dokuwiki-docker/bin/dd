@@ -64,3 +64,106 @@ dd_install_plugins(){
         dd_echo "No plugin files found, skipping installation"
     fi
 }
+
+
+################
+# Install (users.auth.php, local.conf and acl.auth.php)
+################
+# The https://www.dokuwiki.org/installer but somewhat scripted
+dd_install_configuration(){
+
+  dd_echo "##############"
+  # The policy of the [installer](https://www.dokuwiki.org/installer)
+  DOKU_DOCKER_ACL_POLICY=${DOKU_DOCKER_ACL_POLICY:-readonly}
+  dd_echo "Installation configuration with the ACL policy '$DOKU_DOCKER_ACL_POLICY'"
+
+  ## Local.php should be first
+  # as it's used by the script when creating the user file
+  if [[ ! -f conf/local.php ]]; then
+    dd_echo "conf/local.php: Dokuwiki Local conf not present copying a default one"
+    cp "$DOKU_DOCKER_HOME"/meta/install/local.php ./conf/local.php
+  else
+    dd_echo "  * conf/local.php: Dokuwiki Local conf already present"
+  fi
+
+  case "$DOKU_DOCKER_ACL_POLICY" in
+      # ReadOnly Wiki (read for everyone, write and upload for no one)
+      "readonly")
+
+          if [[ ! -f $DOKUWIKI_HOME/conf/acl.auth.php ]]; then
+            dd_echo "  * conf/acl.auth.php: Read only ACL configured"
+            cp "$DOKU_DOCKER_HOME"/meta/install/readonly/acl.auth.php ./conf/acl.auth.php
+          else
+            dd_echo "  * conf/acl.auth.php: Nothing Done - Dokuwiki Acl already present"
+          fi
+
+          if [[ ! -f $DOKUWIKI_HOME/conf/users.auth.php ]]; then
+            cp -f "$DOKU_DOCKER_HOME"/meta/install/readonly/users.auth.php ./conf/users.auth.php
+            dd_echo "  * conf/users.auth.php: Empty User dictionary copied"
+          else
+            dd_echo "  * conf/users.auth.php: Nothing Done - Already present"
+          fi
+
+        ;;
+      # Public Wiki (read for everyone, write and upload for registered users)
+      "public" | "pubupload" | "public-upload")
+
+        if [[ ! -f $DOKUWIKI_HOME/conf/acl.auth.php ]]; then
+            dd_echo "  * conf/acl.auth.php: Public ACL configured"
+            cp "$DOKU_DOCKER_HOME"/meta/install/public/acl.auth.php ./conf/acl.auth.php
+          else
+            dd_echo "  * conf/acl.auth.php: Nothing done - already present"
+        fi
+
+        if [[ ! -f $DOKUWIKI_HOME/conf/users.auth.php ]]; then
+            if [ -z "$DOKU_DOCKER_ADMIN_NAME" ]; then
+              dd_echo "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin name is mandatory. Set it with the environment variable (DOKU_DOCKER_ADMIN_NAME) "
+              exit 1
+            fi;
+            if [ -z "$DOKU_DOCKER_ADMIN_PASSWORD" ]; then
+              dd_echo "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin password is mandatory. Set it with the environment variable ($DOKU_DOCKER_ADMIN_PASSWORD) "
+              exit 1
+            fi
+            DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-admin@localhost}
+            dd_echo "  * conf/users.auth.php: Creating the user ($DOKU_DOCKER_ADMIN_NAME)"
+            php "$DOKU_DOCKER_HOME"/bin/users.auth.init.php "$DOKU_DOCKER_ADMIN_NAME" "$DOKU_DOCKER_ADMIN_PASSWORD" "$DOKU_DOCKER_ADMIN_EMAIL"
+          else
+            dd_echo "  * conf/users.auth.php: Nothing done - already present"
+        fi
+      ;;
+      *)
+        dd_echo "The mode (ie DOKU_DOCKER_ACL_POLICY) should have the value 'readonly' or 'public' not ($DOKU_DOCKER_ACL_POLICY)"
+        exit 1
+      ;;
+  esac
+}
+
+# Clean function
+# Adapted from: https://www.dokuwiki.org/tips:maintenance
+dd_clean(){
+  # Delete file that have not been accessed from 30 days
+  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -atime +30 -delete
+  # Delete feed file
+  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -name "*.feed" -delete
+}
+
+# Example for a big wiki
+# 53M     ./pages
+# 285M    ./media
+# 2.2G    ./meta
+# 5.4M    ./media_meta
+# 821M    ./attic
+# 15M     ./index
+# 1004K   ./locks
+# 26M     ./media_attic
+# 960K    ./tmp
+# 33G     ./cache
+# 1.5M    ./log
+# 36G     .
+
+dd_data_size(){
+  # Size of the sub-directory
+  du -h --max-depth=1 $$DOKU_DOCKER_SAVE_DIR
+  # For the directory
+  # du -sh .
+}

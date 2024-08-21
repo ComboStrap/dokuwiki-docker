@@ -373,7 +373,7 @@ Example:
 ```bash
 docker run \
   -e DOKU_DOCKER_SEARCH_INDEX='off' \
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
+  ...
 ```
 
 Performance:
@@ -384,7 +384,17 @@ Performance:
 
 By default, in production mode, we don't allow any error to occur otherwise the script terminate.
 
-If you want to allow the container to get up, you need to set the [mode to dev](#set-in-dev-mode)
+If you want to allow the container to get up, you need to set:
+* the [mode to dev](#set-in-dev-mode)
+* and eventually to disable the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
+
+Example:
+```bash
+docker run \
+  -e DOKU_DOCKER_ENV=dev \
+  -e DOKU_DOCKER_SEARCH_INDEX='off'
+  ....
+```
 
 ## Tag 
 
@@ -473,6 +483,7 @@ Because it's too damn hard to keep the state of an installation.
   * [Inter Wiki Icon](https://www.dokuwiki.org/interwiki#configuring_interwiki_shortcut_icons)
 * Identification file are co-located with configuration file in the `conf` directory.
 * Runtime data are mixed with persistent data into the `data` directory (ie cache/index/tmp)
+* `meta` contains persistent (original data) and runtime metadata (ie derived from the text)
 
 If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
