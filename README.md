@@ -401,6 +401,19 @@ where:
 Dokuwiki is installed if not found on the volume.
 See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwiki-version)
 
+### How to install and configure a large wiki
+
+With a large wiki, you should [mount a volume](#mount-a-volume) to speed up:
+* the download of store your data
+* the update of the search index
+
+If the search index takes too long, you can [disable it](#how-to-disable-the-automatic-update-of-the-search-index)
+
+If your data lives in Git, you should consider using [git-lfs](https://git-lfs.com/) to reduce the size of the volume.
+Why ? Because otherwise you get your media (images, ...), not once but twice:
+* in the `.git` directory 
+* and in the working directory (ie `data\media`)
+
 ### Components
 
 All image contains:
