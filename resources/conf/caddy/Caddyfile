@@ -26,7 +26,8 @@
         @phpinfo {
             path /dokuwiki-docker/phpinfo.php
         }
-        basicauth @phpinfo {
+        # 'basicauth' directive is deprecated, please use 'basic_auth' instead
+        basic_auth @phpinfo {
             {$DOKU_DOCKER_ADMIN_NAME} {$DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH}
         }
 

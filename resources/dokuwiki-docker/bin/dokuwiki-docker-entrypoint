@@ -119,7 +119,7 @@ fi
 DOKUWIKI_PATCH_DIR="$DOKU_DOCKER_HOME/meta/dokuwiki-patches/${DOKUWIKI_VERSION}"
 if [[ -d "$DOKUWIKI_PATCH_DIR" ]]; then
   dd_echo "Copying Dokuwiki Patch for version ${DOKUWIKI_VERSION}"
-  cp -r -f "$DOKUWIKI_PATCH_DIR" .
+  cp -r -f "$DOKUWIKI_PATCH_DIR"/* .
 fi
 
 #############################################
