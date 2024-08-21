@@ -380,6 +380,12 @@ Performance:
 * In case of rollout, this extra processing should not impact the availability of your container if you set the [readiness probes](#get-healthcheck--liveness--probes--container-state)
 * If the rollout takes too long, you need to set up a [volume](#mount-a-volume) so that the index is only updated and not created from scratch.
 
+### How to debug a crashing container
+
+By default, in production mode, we don't allow any error to occur otherwise the script terminate.
+
+If you want to allow the container to get up, you need to set the [mode to dev](#set-in-dev-mode)
+
 ## Tag 
 
 We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-image)

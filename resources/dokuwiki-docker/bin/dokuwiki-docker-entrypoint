@@ -251,7 +251,21 @@ DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH=$(caddy hash-password --plaintext "$DOKU_D
 DOKU_DOCKER_SEARCH_INDEX=${DOKU_DOCKER_SEARCH_INDEX:-on}
 if [[ "$DOKU_DOCKER_SEARCH_INDEX" != "off" ]]; then
   dd_echo "Updating search index"
+
+  # If the volume has not enough space, the data sub-directory
+  # may have not been created, we create them to not break the search
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/attic"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/cache"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/index"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/locks"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/log"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/media_meta"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/media_attic"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/meta"
+  mkdir -p "$DOKU_DOCKER_SAVE_DIR/tmp"
+
   php bin/indexer.php -q
+
 else
   dd_echo "Automatic Update of search index disabled"
 fi
