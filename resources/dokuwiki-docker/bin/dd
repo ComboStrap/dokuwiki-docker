@@ -142,19 +142,23 @@ dd_install_configuration(){
 # Adapted from: https://www.dokuwiki.org/tips:maintenance
 dd_clean(){
 
-  # Delete file that have not been accessed from 30 days
-  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -atime +30 -delete
+  # Delete file that have not been accessed from 10 days
+  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -atime +10 -delete
   # Delete feed file
   find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -name "*.feed" -delete
-  # remove stale lock files (files which are 1-2 days old)
+  # Remove stale lock files (files which are 1-2 days old)
   find "$DOKU_DOCKER_SAVE_DIR"/locks -name '*.lock' -type f -mtime +1 -delete
 
   # Purge files older than ${retention_days} days from attic and media_attic (old revisions)
   # Find "$DOKU_DOCKER_SAVE_DIR"/{media_,}attic/ -type f -not -name _dummy -mtime +"${retention_days}" -delete
-
-  # remove empty directories
+  # Remove empty directories
   find "$DOKU_DOCKER_SAVE_DIR"/{attic,cache,index,locks,media,media_attic,media_meta,meta,pages,tmp}/ \
         -mindepth 1 -type d -empty -delete
+
+  echo "DELETE FROM CACHE_LOG WHERE TIMESTAMP > datetime('now', '-5 days');" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
+  echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 ./meta/combo-secondary.sqlite3
+
+
 
 }
 
@@ -174,7 +178,10 @@ dd_clean(){
 
 dd_data_size(){
   # Size of the sub-directory
-  du -h --max-depth=1 $$DOKU_DOCKER_SAVE_DIR
+  du -h --max-depth=1 "$DOKU_DOCKER_SAVE_DIR"
   # For the directory
   # du -sh .
+  # Top 20 files
+  # find "$DOKU_DOCKER_SAVE_DIR" -type f -exec du -h {} + | sort -rh | head -n 20
+  # find . -type f -exec du -h {} + | sort -rh | head -n 20
 }
