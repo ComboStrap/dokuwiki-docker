@@ -155,8 +155,17 @@ dd_clean(){
   find "$DOKU_DOCKER_SAVE_DIR"/{attic,cache,index,locks,media,media_attic,media_meta,meta,pages,tmp}/ \
         -mindepth 1 -type d -empty -delete
 
+  # Secondary
   echo "DELETE FROM CACHE_LOG WHERE TIMESTAMP > datetime('now', '-5 days');" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
-  echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 ./meta/combo-secondary.sqlite3
+  echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
+  echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
+  echo 'VACUUM;' | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3 # get space back
+
+  # Primary
+  echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3
+  echo 'VACUUM;' | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3 # get space back
+  du -sh  "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3
+
 
 
 
