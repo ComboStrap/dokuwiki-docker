@@ -1,19 +1,33 @@
-# Dev
+# Dev Contribution
 
 
-## How to develop the scripts
+## How to develop the Docker image
 
-We need a Dokuwiki Env, therefore the best way is to use the created
-`dokuwiki docker` image 
-
+* Change the [Dockerfile](../Dockerfile)
+* [Build](../build.sh)
 ```bash
 /build.sh
+```
+* [Push](../push.sh) if satisfied
+```bash
+./push.sh
+```
 
+## How to develop the bash scripts
+
+* Use the [last build](../build.sh) as some script need Dokuwiki scripts
+```bash
+/build.sh
+```
+* Give execution permissions on your desktop to the scripts
+```bash
 chmod +755 resources/dokuwiki-docker/bin/*
 chmod +755 resources/dokuwiki-installer/bin/*
 chmod +755 resources/phpctl/bin/*
 chmod +755 resources/dokuctl/bin/*
-
+```
+* Then run:
+```bash
 docker run \
   --name dd \
   --rm \
@@ -27,3 +41,5 @@ docker run \
   -v $PWD/resources/phpctl:/opt/phpctl \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
+* All scripts run with the above command are from your desktop.
+* Change them, re-run.
