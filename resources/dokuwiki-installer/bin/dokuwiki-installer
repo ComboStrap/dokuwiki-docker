@@ -1,5 +1,12 @@
 #!/bin/bash
 
+# flag
+# e - Exit if any error
+# u - Treat unset variables as an error when substituting
+# o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
+# E - the ERR trap is inherited by shell functions
+set -Eeuo pipefail
+
 ################
 # Install (users.auth.php, local.conf and acl.auth.php)
 ################
@@ -67,7 +74,7 @@ case "$DOKU_DOCKER_ACL_POLICY" in
         fi
 
         if [[ ! -f $DOKUWIKI_USERS_FILE ]]; then
-          cp -f "$DOKU_DOCKER_HOME"/meta/install/readonly/users.auth.php "$DOKUWIKI_USERS_FILE"
+          cp -f "$DOKUWIKI_INSTALLER_HOME"/meta/readonly/users.auth.php "$DOKUWIKI_USERS_FILE"
           echo_info "  * conf/users.auth.php: Empty User dictionary copied"
         else
           echo_info "  * conf/users.auth.php: Nothing Done - Already present"
@@ -79,7 +86,7 @@ case "$DOKU_DOCKER_ACL_POLICY" in
 
       if [[ ! -f $DOKUWIKI_ACL_FILE ]]; then
           echo_info "  * conf/acl.auth.php: Public ACL configured"
-          cp "$DOKU_DOCKER_HOME"/meta/install/public/acl.auth.php "$DOKUWIKI_ACL_FILE"
+          cp "$DOKUWIKI_INSTALLER_HOME"/meta/public/acl.auth.php "$DOKUWIKI_ACL_FILE"
         else
           echo_info "  * conf/acl.auth.php: Nothing done - already present"
       fi

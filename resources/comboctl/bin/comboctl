@@ -101,13 +101,66 @@ install_site() {
 }
 
 
+# Clean function
+# Adapted from: https://www.dokuwiki.org/tips:maintenance
+clean(){
+
+  echo_log "Cache       : Delete files that have not been accessed from 10 days"
+  find "$DOKUWIKI_SAVE_DIR"/cache -type f -atime +10 -delete
+
+  # echo_log "Deleting feed file from cache"
+  # find "$DOKUWIKI_SAVE_DIR"/cache -type f -name "*.feed" -delete
+
+  echo_log "Locks       : Remove stale lock files (older than 1 day)"
+  find "$DOKUWIKI_SAVE_DIR"/locks -name '*.lock' -type f -mtime +1 -delete
+
+  echo_log "Tmp         : Remove files older than 1-2 days"
+  find "$DOKUWIKI_SAVE_DIR"/tmp -type f -mtime +1 -delete
+
+  # Purge files older than ${retention_days} days from attic and media_attic (old revisions)
+  # Find "$DOKU_DOCKER_SAVE_DIR"/{media_,}attic/ -type f -mtime +"${retention_days}" -delete
+
+  echo_log "All         : Remove empty directories"
+  find "$DOKUWIKI_SAVE_DIR"/{attic,cache,index,locks,media,media_attic,media_meta,meta,pages,tmp}/ \
+        -mindepth 1 -type d -empty -delete
+
+
+  COMBO_LOG_PREFIX="Combo Sqlite"
+  # Primary Meta Table
+  COMBO_PRIMARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
+  if [ -f $COMBO_PRIMARY_SQLITE ]; then
+    TABLE_COUNT=$(sqlite3 "$COMBO_PRIMARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
+    if [ $TABLE_COUNT != '0' ]; then
+      # Old table
+      echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 $COMBO_PRIMARY_SQLITE
+    fi;
+  fi;
+
+  # Secondary Runtime Data
+  COMBO_SECONDARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo-secondary.sqlite3
+  if [ -f $COMBO_SECONDARY_SQLITE ]; then
+    TABLE_COUNT=$(sqlite3 "$COMBO_SECONDARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
+    if [ $TABLE_COUNT != '0' ]; then
+      echo_log "$COMBO_LOG_PREFIX: Delete Cache Log Hit older than 5 days"
+      echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 $COMBO_SECONDARY_SQLITE
+      echo_log "$COMBO_LOG_PREFIX: Delete Redirections Log Hit older than 1 day"
+      echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 $COMBO_SECONDARY_SQLITE
+    fi
+  fi
+
+  echo_log "$COMBO_LOG_PREFIX: Vacuum (Get space back, shrink the db file)"
+  echo 'VACUUM;' | sqlite3 "$COMBO_SECONDARY_SQLITE"
+  echo 'VACUUM;' | sqlite3 "$COMBO_PRIMARY_SQLITE"
+
+}
+
 # Clean the meta directory
 # This script will clean the meta directory
 # History in this thread: https://forum.dokuwiki.org/d/10570-meta-folder-full-of-spam/10
 function clean_meta(){
 
   pagesDir=${1:-$DOKUWIKI_PAGES_DIR}
-  metaDir=${2:-$DOKUWIKI_DOKUWIKI_META_DIR}
+  metaDir=${2:-$DOKUWIKI_META_DIR}
 
   echo_log "Cleaning the meta directory"
   # Iterate over each directory in meta
@@ -126,7 +179,9 @@ function clean_meta(){
   # Iterate over each file in meta
   # A corresponding page file should exist in pages
   # Files extension in meta may be `meta`, `indexed` or `changes`
-  find "$metaDir" -type FILE_PATH | while read -r metaFile; do
+  # -o means or
+  echo_log "Cleaning the meta files"
+  find "$metaDir" -type f \( -name "*.meta" -o -name "*.indexed" -o -name "*.changes" \) | while read -r metaFile; do
 
   	# Get the relative path from metaDir
     relative_path="${metaFile#$metaDir}"
@@ -183,19 +238,24 @@ install_plugins(){
     fi
 }
 
+function du(){
+    du -sh  "$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
+}
+
 function print_usage() {
 
   echo ""
   echo "Usage of the cli ${CLI_NAME}"
   echo ""
-  echo "   ${CLI_NAME} command [--option[=value] ...]"
+  echo "   ${CLI_NAME} command [argument ...] [--option[=value] ...]"
   echo ""
   echo "where command is one of:"
-  echo "     * help            - this help"
-  echo "     * index           - index the wiki"
-  echo "     * install_site    - install a combo site"
-  echo "     * install_plugins - install the plugins of a combo site"
-  echo "     * clean           - maintenance script to clean the wiki"
+  echo "     * du                     - dokuwiki usage (ie dokuwiki disk usage)"
+  echo "     * index                  - index the wiki"
+  echo "     * install_site   GitUrl  - install a combo site"
+  echo "     * install_plugins        - install the plugins of a combo site"
+  echo "     * clean                  - maintenance script to clean the wiki"
+  echo "     * help                   - this help"
   echo ""
 
 }
@@ -236,8 +296,8 @@ for arg in "$@"; do
 done
 
 if [ -z "$COMMAND" ]; then
-  echo_log 'No command was given, list chosen.'
-  COMMAND='ls'
+  echo_log 'No command was given, help chosen.'
+  COMMAND='help'
 fi
 
 echo_log
@@ -253,6 +313,13 @@ install_site)
   ;;
 install_plugins)
   install_plugins
+  ;;
+clean)
+  clean
+  clean_meta
+  ;;
+du)
+  du
   ;;
 help)
   print_usage

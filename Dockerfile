@@ -23,7 +23,9 @@ RUN apt-get update && apt-get install -y \
     # Supervisor Installation
     && apt-get install -y --no-install-recommends supervisor \
     # Php FastCgi - install the cgi-fcgi client to troubleshoot phpFpm
-    && apt-get install -y libfcgi
+    && apt-get install -y libfcgi \
+    # SQlite 3 Cli (pdo_sqlite uses a library, not the cli)
+    && apt-get install -y sqlite3
 
 ####################################
 # Php Extensions Installation
@@ -124,7 +126,6 @@ RUN chmod 0777 /home # Gives permission to the running user to create its own HO
 RUN mkdir "/opt/dokuwiki-docker"
 COPY resources/dokuwiki-docker /opt/dokuwiki-docker
 RUN chmod 0755 /opt/dokuwiki-docker/bin/*
-ENV PATH="/opt/dokuwiki-docker/bin:${PATH}"
 ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
 
 ####################################
@@ -133,7 +134,6 @@ ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
 RUN mkdir "/opt/dokuwiki-installer"
 COPY resources/dokuwiki-installer /opt/dokuwiki-installer
 RUN chmod 0755 /opt/dokuwiki-installer/bin/*
-ENV PATH="/opt/dokuwiki-installer/bin:${PATH}"
 
 ####################################
 # Phpctl App Install
@@ -141,7 +141,6 @@ ENV PATH="/opt/dokuwiki-installer/bin:${PATH}"
 RUN mkdir "/opt/phpctl"
 COPY resources/phpctl /opt/phpctl
 RUN chmod 0755 /opt/phpctl/bin/*
-ENV PATH="/opt/phpctl/bin:${PATH}"
 
 ####################################
 # ComboCtl App Install
@@ -149,4 +148,3 @@ ENV PATH="/opt/phpctl/bin:${PATH}"
 RUN mkdir "/opt/comboctl"
 COPY resources/comboctl /opt/comboctl
 RUN chmod 0755 /opt/comboctl/bin/*
-ENV PATH="/opt/comboctl/bin:${PATH}"

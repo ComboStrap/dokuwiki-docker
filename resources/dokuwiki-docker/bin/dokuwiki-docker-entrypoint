@@ -18,18 +18,12 @@ fi;
 
 ################
 # Executing User Env
+# The env is by default set for the Dockerfile user (ie root)
+# When the image is run for the desktop/host user
+# We recreate the same environment
 ################
-USER_UID=$(id -u)
-USER_NAME=$(whoami 2> /dev/null || echo 'noname')
-dd_echo "Executing User: $USER_NAME UID: $USER_UID GID: $(id -g)"
-if [ "$HOME" == '/' ] && [ "$USER_UID" != '0' ]; then
-  export HOME=/home/$USER_NAME
-  dd_echo "User Not Root, creating and setting HOME=$HOME"
-  # to avoid error with the HOME directory
-  # such as `error: could not lock config file //.gitconfig: Permission denied`
-  # Issue: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/37408
-  mkdir -p "$HOME"
-fi
+# All environments
+. /etc/profile.d/dokuwiki-docker-env.sh
 
 #############################################
 # Script
@@ -39,11 +33,6 @@ fi
 #############################################
 DOKU_DOCKER_HOME=/opt/dokuwiki-docker
 
-#############################################
-# Env
-#############################################
-# To bring the environment
-. /etc/profile.d/dokuwiki-docker-env.sh
 
 #############
 # Supervisor
@@ -92,8 +81,6 @@ export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 #############
 # https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
-# Where Dokuwiki is installed
-export DOKUWIKI_HOME='/var/www/html'
 # The path to the dokuwiki data
 export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
 

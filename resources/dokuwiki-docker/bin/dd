@@ -8,41 +8,6 @@ dd_echo(){
 
 
 
-
-
-# Clean function
-# Adapted from: https://www.dokuwiki.org/tips:maintenance
-dd_clean(){
-
-  # Delete file that have not been accessed from 10 days
-  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -atime +10 -delete
-  # Delete feed file
-  find "$DOKU_DOCKER_SAVE_DIR"/cache -type f -name "*.feed" -delete
-  # Remove stale lock files (files which are 1-2 days old)
-  find "$DOKU_DOCKER_SAVE_DIR"/locks -name '*.lock' -type f -mtime +1 -delete
-
-  # Purge files older than ${retention_days} days from attic and media_attic (old revisions)
-  # Find "$DOKU_DOCKER_SAVE_DIR"/{media_,}attic/ -type f -not -name _dummy -mtime +"${retention_days}" -delete
-  # Remove empty directories
-  find "$DOKU_DOCKER_SAVE_DIR"/{attic,cache,index,locks,media,media_attic,media_meta,meta,pages,tmp}/ \
-        -mindepth 1 -type d -empty -delete
-
-  # Secondary
-  echo "DELETE FROM CACHE_LOG WHERE TIMESTAMP > datetime('now', '-5 days');" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
-  echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
-  echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3
-  echo 'VACUUM;' | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo-secondary.sqlite3 # get space back
-
-  # Primary
-  echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3
-  echo 'VACUUM;' | sqlite3 "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3 # get space back
-  du -sh  "$DOKU_DOCKER_SAVE_DIR"/meta/combo.sqlite3
-
-
-
-
-}
-
 # Example for a big wiki
 # 53M     ./pages
 # 285M    ./media
