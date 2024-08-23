@@ -46,6 +46,7 @@ fi;
 DOKUWIKI_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-$DOKUWIKI_HOME/data}
 DOKUWIKI_PAGES_DIR="$DOKUWIKI_SAVE_DIR/pages"
 DOKUWIKI_META_DIR="$DOKUWIKI_SAVE_DIR/meta"
+DOKUWIKI_LOCKS_DIR="$DOKUWIKI_SAVE_DIR/locks"
 
 ######################################
 # Command
@@ -58,7 +59,7 @@ function update_index(){
     mkdir -p "$DOKUWIKI_SAVE_DIR/attic"
     mkdir -p "$DOKUWIKI_SAVE_DIR/cache"
     mkdir -p "$DOKUWIKI_SAVE_DIR/index"
-    mkdir -p "$DOKUWIKI_SAVE_DIR/locks"
+    mkdir -p "$DOKUWIKI_DOKUWIKI_LOCKS_DIR"
     mkdir -p "$DOKUWIKI_SAVE_DIR/log"
     mkdir -p "$DOKUWIKI_SAVE_DIR/media_meta"
     mkdir -p "$DOKUWIKI_SAVE_DIR/media_attic"
@@ -130,6 +131,18 @@ function print_usage() {
 
 }
 
+# Lock Monitoring (It seems)
+function lock() {
+
+  cd $DOKUWIKI_LOCKS_DIR || exit 1
+  while :; do
+    ls -A1
+    sleep 0.1
+    clear
+  done
+
+}
+
 declare -a OPTIONS
 # Parsing
 for arg in "$@"; do
@@ -162,6 +175,7 @@ case ${COMMAND} in
 index)
   update_index
   ;;
+
 help)
   print_usage
   ;;

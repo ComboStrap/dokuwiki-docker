@@ -156,16 +156,6 @@ function infoReport() {
 
 }
 
-function lock() {
-
-  cd /opt/www/datacadamia.com/dokudata/locks || exit 1
-  while :; do
-    ls -A1
-    sleep 0.1
-    clear
-  done
-
-}
 
 function getOsData() {
   # CPU_Util = (user+system+nice+softirq+steal)/ (user+system+nice+softirq+steal+idle+iowait)
@@ -424,9 +414,6 @@ kill)
   ;;
 control)
   control "${OPTIONS[@]}"
-  ;;
-lock)
-  lock "${OPTIONS[@]}"
   ;;
 help)
   print_usage
