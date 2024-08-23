@@ -31,6 +31,7 @@ function echo_err() {
 }
 
 function finish() {
+  echo_log
   echo_log "Script terminated\n"
 }
 trap finish EXIT
@@ -128,11 +129,11 @@ clean(){
   COMBO_LOG_PREFIX="Combo Sqlite"
   # Primary Meta Table
   COMBO_PRIMARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
-  if [ -f $COMBO_PRIMARY_SQLITE ]; then
+  if [ -f "$COMBO_PRIMARY_SQLITE" ]; then
     TABLE_COUNT=$(sqlite3 "$COMBO_PRIMARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
-    if [ $TABLE_COUNT != '0' ]; then
+    if [ "$TABLE_COUNT" != '0' ]; then
       # Old table
-      echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 $COMBO_PRIMARY_SQLITE
+      echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 "$COMBO_PRIMARY_SQLITE"
     fi;
   fi;
 
@@ -142,9 +143,9 @@ clean(){
     TABLE_COUNT=$(sqlite3 "$COMBO_SECONDARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
     if [ $TABLE_COUNT != '0' ]; then
       echo_log "$COMBO_LOG_PREFIX: Delete Cache Log Hit older than 5 days"
-      echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 $COMBO_SECONDARY_SQLITE
+      echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$COMBO_SECONDARY_SQLITE"
       echo_log "$COMBO_LOG_PREFIX: Delete Redirections Log Hit older than 1 day"
-      echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 $COMBO_SECONDARY_SQLITE
+      echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 "$COMBO_SECONDARY_SQLITE"
     fi
   fi
 
@@ -162,7 +163,7 @@ function clean_meta(){
   pagesDir=${1:-$DOKUWIKI_PAGES_DIR}
   metaDir=${2:-$DOKUWIKI_META_DIR}
 
-  echo_log "Cleaning the meta directory"
+  echo_log "Meta        : Cleaning the meta directory"
   # Iterate over each directory in meta
   find "$metaDir" -type d | while read -r dir; do
       # Get the relative path from metaDir
@@ -180,7 +181,7 @@ function clean_meta(){
   # A corresponding page file should exist in pages
   # Files extension in meta may be `meta`, `indexed` or `changes`
   # -o means or
-  echo_log "Cleaning the meta files"
+  echo_log "Meta        : Cleaning the meta files"
   find "$metaDir" -type f \( -name "*.meta" -o -name "*.indexed" -o -name "*.changes" \) | while read -r metaFile; do
 
   	# Get the relative path from metaDir
@@ -238,7 +239,7 @@ install_plugins(){
     fi
 }
 
-function du(){
+function dokuwiki_usage(){
     du -sh  "$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
 }
 
@@ -319,7 +320,7 @@ clean)
   clean_meta
   ;;
 du)
-  du
+  dokuwiki_usage
   ;;
 help)
   print_usage
