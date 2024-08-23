@@ -1,4 +1,6 @@
 <?php
+// File created by Dokuwiki Docker
+
 
 // load the standard cascade
 if (!defined('DOKU_CONF')) {
@@ -10,6 +12,6 @@ if (!isset($config_cascade) || $config_cascade === []) {
 
 // Adjust config_cascade
 // Add a set of default
-$config_cascade['main']['default'][] = __DIR__ . '/../dokuwiki-docker/conf/local.default.php';
+$config_cascade['main']['default'][] = '/opt/dokuwiki-docker/meta/dokuwiki-conf/local.default.php';
 // Set the protected
-array_unshift($config_cascade['main']['protected'], __DIR__ . '/../dokuwiki-docker/conf/local.protected.php');
+array_unshift($config_cascade['main']['protected'], '/opt/dokuwiki-docker/meta/dokuwiki-conf/local.protected.php');

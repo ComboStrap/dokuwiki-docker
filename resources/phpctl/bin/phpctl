@@ -1,0 +1,439 @@
+#!/bin/bash
+# Control the php-fpm runs
+
+# need the systat package for pidstat
+# yum install sysstat -y
+
+CLI_NAME=$(basename "$0") # Name of the cli
+
+function finish() {
+  printf "\nScript terminated\n"
+}
+trap finish EXIT
+
+# Send the message to the log file and the stdout
+#
+# The log file can be given via the first arg $2
+# Default to the variable ${LOG_FILE}
+function echo_log() {
+
+  LOCAL_LOG_FILE_PATH=${LOG_FILE}
+  if ! [ -z ${2+x} ]; then
+    LOCAL_LOG_FILE_PATH=$2
+  fi
+  MESSAGE=$1
+  echo -e "$MESSAGE" 2>&1 | tee -a "${LOCAL_LOG_FILE_PATH}"
+
+}
+
+# Print the error message $1
+function echo_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  #(>&2 echo -e "${RED}$1${NC}")
+  echo_log "${RED}$1${NC}"
+}
+
+function getStatData() {
+
+  if [ -z "$1" ]; then
+    echo_err 'The Pid should be given as first argument for stat data'
+    exit 1
+  fi
+  pid=$1
+  # Average
+  frequency=1 # in sec
+  period=3    # in sec
+  averageLine=$(pidstat -p "$pid" -l $frequency $period | grep Average)
+  averageCpu=$(echo "$averageLine" | awk '{print $7}' | xargs printf "%.0f")
+  averageMemory=$(echo "$averageLine" | awk '{print $6}' | xargs printf "%.0f")
+  echo "$averageCpu $averageMemory"
+}
+
+function killPhpFpm() {
+
+  if [ -z "$1" ]; then
+    echo_err 'The Pid should be given as first argument for stat data'
+    exit 1
+  fi
+  pid=$1
+
+  subject="Php-fpm process $pid killed"
+  if [ -n "$2" ]; then
+    subject="$subject $2"
+  fi
+
+  report=$(infoReport "$pid")
+  kill -9 "$pid"
+  # note: in cron, the output is send to the user
+  # We could therefore not use the mail command
+  # but a cron mode
+  echo -e "The php-fpm $pid was killed\n$report" | mail -s "$subject" root
+
+}
+function statReport() {
+
+  kill='false'
+  if [ "${OPTIONS['kill']}" != '' ]; then
+    kill=${OPTIONS['kill']}
+  else
+    kill='false'
+  fi
+
+  echo "List of $processName processes (kill: $kill)"
+
+  # get the pid of php-fpm processes
+  IFS=' ' read -r -a processes <<<"$(pidof "$processName")"
+  echo "Total process: ${#processes[*]}"
+  for i in "${!processes[@]}"; do
+    pid=${processes[$i]}
+    read -r averageCpu averageMemory <<<"$(getStatData "$pid")"
+    shouldKill=live
+    if [[ "$kill" == 'kill' && ($averageCpu -gt 80 || $averageMemory -gt 10) ]]; then
+      extraSubject="(Origin: stat, AvgCpu: $averageCpu, AvgMem: $averageMemory)"
+      killPhpFpm "$pid" "$extraSubject"
+      shouldKill=killed
+    fi
+    printf "%s - %s - %s - %s - %s\n" "$i" "$pid" "$averageCpu" "$averageMemory" "$shouldKill"
+  done
+
+}
+
+function getPhpStatusData() {
+  json=$(curl -s 'http://localhost/php-status?full&json')
+  if [ -z "$1" ]; then
+    phpStatus=$(echo "$json" | jq --raw-output ".processes[]")
+  else
+    pid=$1
+    phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid)")
+  fi
+  echo "$phpStatus"
+}
+
+function listReport() {
+  echo " Pid Cpu Mem"
+  # -b: Batch mode operation and -n: Number of iterations.
+  output=$(top -b -n 1 | grep "$processName" | awk '{print $1,$9,$10}')
+  OLD_IFS=$IFS
+  IFS=$'\n'
+  counter=0
+  json=$(curl -s 'http://localhost/php-fpm/status?full&json')
+  while IFS=" " read -r pid cpu mem; do
+    # extract the state and the request uri
+    # --raw-output is to delete the quotes of the string created at the end of the jq pipeline with jq string interpolation
+    phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
+    read -r state requestUri <<<"$phpStatus"
+    cpu=$(printf "%.0f" "$cpu") # to integer
+    mem=$(printf "%.0f" "$mem") # to integer
+    echo "$pid $cpu $mem $state $requestUri"
+    counter=$((counter + 1))
+  done <<<"$output"
+  IFS=$OLD_IFS
+  echo -e "\n$counter processes total"
+}
+
+function infoReport() {
+
+  option='pid'
+  if [ "${OPTIONS[$option]}" != '' ]; then
+    pid=${OPTIONS[$option]}
+  else
+    if [ -z "$1" ]; then
+      echo_err 'The Pid should be given as first argument'
+      exit 1
+    fi
+    pid=$1
+  fi
+
+  echo "Info report for the pid $pid"
+  # -b: Batch mode operation and -n: Number of iterations.
+  read -r cpu mem <<<"$(top -b -n 1 -p "$pid" | awk 'NR>7 {print $9,$10}')"
+  cpu=$(printf "%.0f" "$cpu") # to integer
+  mem=$(printf "%.0f" "$mem") # to integer
+  echo "Cpu Usage: $cpu"
+  echo "Memory Usage: $mem"
+  echo "Php-fpm data: $(getPhpStatusData "$pid")"
+
+}
+
+function lock() {
+
+  cd /opt/www/datacadamia.com/dokudata/locks || exit 1
+  while :; do
+    ls -A1
+    sleep 0.1
+    clear
+  done
+
+}
+
+function getOsData() {
+  # CPU_Util = (user+system+nice+softirq+steal)/ (user+system+nice+softirq+steal+idle+iowait)
+  # see also mpstat
+  totalCpu=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | xargs printf "%.0f")
+  # Memory used/total
+  totalMemory=$(free -m | awk 'NR==2{print $3/$2*100}' | xargs printf "%.0f")
+  echo "$totalCpu" "$totalMemory"
+}
+
+function getOptionValue() {
+  # Options
+  # shellcheck disable=SC2034
+  IFS='=' read -r key value <<<"${1:2}"
+  if [ "$value" == "" ]; then
+    value=true
+  fi
+  echo "$value"
+}
+
+function instantOs() {
+
+  read -r totalCpu totalMemory <<<"$(getOsData)"
+  echo "Os report:"
+  echo "  * Total Cpu: ${totalCpu}%"
+  echo "  * Total Memory Usage: $totalMemory%"
+
+}
+
+function control() {
+
+  kill=false       # do we need to kill
+  service=false    # run in a service mode
+  loop=false       # run in loop or once
+  maximumMemory=80 # maximum memory
+  sleep=0.5        # wait time in seconds
+  report=list      # doe we see the details
+  for arg in "$@"; do
+    case "$arg" in
+    --loop)
+      loop=true
+      ;;
+    --list)
+      report=list
+      ;;
+    --kill)
+      kill=true
+      ;;
+    --service)
+      service=true
+      loop=true
+      sleep=5
+      kill=true
+      report=summary
+      ;;
+    --sleep*)
+      sleep=$(getOptionValue "$arg")
+      ;;
+    --max*)
+      maximumMemory=$(getOptionValue "$arg")
+      ;;
+    *)
+      echo_err "Unknown option $arg"
+      exit 1
+      ;;
+    esac
+    shift
+  done
+  counter=0
+  header="Control Running Processes (loop: $loop of $sleep sec where killing is $kill with max memory $maximumMemory)"
+  echo "$header"
+  while :; do
+
+    # Header report
+    read -r totalCpu totalMemory <<<"$(getOsData)"
+    if [ $service == false ]; then
+      echo "Total Cpu: $totalCpu, Memory: $totalMemory"
+    fi
+
+    # We sleep at the beginning as if there is an error,
+    # we use `continue` to stop the loop processing
+    sleep "$sleep"
+
+    # Sort of service state
+    if [[ $report != 'list' && $totalMemory -lt $maximumMemory && $loop == true ]]; then
+      continue
+    fi
+
+    # List reporting
+    if [ $service == false ]; then
+      printf "Pid      Cpu  Mem  Url\n"
+    fi
+    output=$(top -b -n 1 | grep "php-fpm" | awk '{print $1,$9,$10}')
+    OLD_IFS=$IFS
+    IFS=$'\n'
+    mainPid=$(systemctl show -p MainPID php-fpm | awk -F= '{print $2}')
+
+    phpStatusResponse=$(curl -s -w "\n%{http_code}" 'http://localhost/php-status?full&json')
+    phpHttpStatus=${phpStatusResponse: -3} # the space is important
+    if [ "$phpHttpStatus" != '200' ]; then
+      echo_err "Php Status returned a bad response: $phpHttpStatus"
+      continue
+    fi
+    json=${phpStatusResponse:0:-4} # all but the last 4 digits
+    while IFS=" " read -r pid cpu mem; do
+
+      phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
+      IFS=" " read -r state requestUri <<<"$phpStatus"
+      if [ "$pid" != "$mainPid" ]; then
+        if [[ "$state" == "Running" ]] && [[ ! "$requestUri" =~ '/php-status' ]]; then
+          extraSubject="$pid (Origin: stat, Cpu: $cpu, Mem: $mem)"
+          if [ $service == false ]; then
+            printf "%-8s %-4s %-4s %s\n" "$pid" "$cpu" "$mem" "$requestUri"
+          fi
+          if [[ $kill == true && $totalMemory -gt $maximumMemory && "$requestUri" =~ '/lib/exe/taskrunner' ]]; then
+            killPhpFpm "$pid" "$extraSubject"
+          fi
+        fi
+      fi
+
+    done <<<"$output"
+    IFS=$OLD_IFS
+
+    if [ $service == false ]; then
+      # not sure if the test is needed with clear in service mode
+      clear
+    fi
+
+    if [[ $loop == false ]]; then
+      echo "Not a continuous monitoring ($continuous), break"
+      break
+    fi
+
+  done
+}
+
+function monitor() {
+
+  kill=false
+  continuous=once
+  type='summary'
+  maximumMemory=80
+  for arg in "$@"; do
+    case "$arg" in
+    --loop)
+      continuous=loop
+      ;;
+    --kill)
+      kill=true
+      ;;
+    --list)
+      type='list'
+      ;;
+    --max=*)
+      maximumMemory=$(getOptionValue "$arg")
+      ;;
+    *) ;;
+    esac
+    shift
+  done
+
+  echo "Executing Monitor $continuous in a $type report "
+
+  while :; do
+
+    read -r totalCpu totalMemory <<<"$(getOsData)"
+
+    if [[ $totalMemory -gt $maximumMemory ]]; then
+      echo "Total Memory is critical ($totalMemory), killing"
+      control --kill
+    else
+      echo "Total Memory ($totalMemory), Total Cpu ($totalCpu) not critical"
+      if [ "$type" == 'list' ]; then
+        listReport
+      fi
+      if [[ $continuous != 'loop' ]]; then
+        echo "Not a continuous monitoring ($continuous), break"
+        break
+      fi
+      sleep=5
+      echo "  $continuous, sleeping $sleep"
+      sleep $sleep
+      if [ "$type" == 'list' ]; then
+        clear
+      fi
+    fi
+  done
+
+}
+
+function print_usage() {
+
+  echo ""
+  echo "Usage of the cli ${CLI_NAME}"
+  echo ""
+  echo "   ${CLI_NAME} command [--option[=value] ...]"
+  echo ""
+  echo "where command is one of:"
+  echo "     * ls - list the processes"
+  echo "     * info \$pid - list the info for the pid \$pid"
+  echo "     * kill \$pid [subject]- kill the pid \$pid and send an email to root"
+  echo "     * monitor [--loop] [--list] [--max=xxx]- monitor the os and kill if necessary (run once by default or in loop, show a summary by default or a list)"
+  echo "     * stat [kill] - returns average Cpu and memory over the last 3 seconds. Kill if needed"
+  echo "     * control [--loop] [--kill] - list the running process, the kill options will kill the task runners if the memory is critical"
+  echo ""
+
+}
+
+processName="php-fpm"
+declare -a OPTIONS
+# Parsing
+for arg in "$@"; do
+  case "$arg" in
+  --*)
+    OPTIONS+=("$arg")
+    shift
+    ;;
+  *)
+    # Command
+    COMMAND=$1
+    echo "Command ($COMMAND) found"
+    shift
+    ;;
+  esac
+done
+
+if [ -z "$COMMAND" ]; then
+  echo 'No command was given, list chosen.'
+  COMMAND='ls'
+fi
+
+echo
+echo "${CLI_NAME^} ${COMMAND^}"
+echo "-------------------------------------------"
+echo ""
+instantOs
+echo ""
+case ${COMMAND} in
+ls)
+  listReport
+  ;;
+list)
+  listReport
+  ;;
+stat)
+  statReport "${OPTIONS[@]}"
+  ;;
+monitor)
+  monitor "${OPTIONS[@]}"
+  ;;
+info)
+  infoReport "${OPTIONS[@]}"
+  ;;
+kill)
+  killPhpFpm "${OPTIONS[@]}"
+  ;;
+control)
+  control "${OPTIONS[@]}"
+  ;;
+lock)
+  lock "${OPTIONS[@]}"
+  ;;
+help)
+  print_usage
+  ;;
+*)
+  echo_err "The command $COMMAND is unknown"
+  print_usage
+  exit 1
+  ;;
+esac

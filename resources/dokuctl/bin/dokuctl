@@ -1,0 +1,173 @@
+#!/bin/bash
+# Command utility for Dokuwiki
+
+
+##########################################
+# Standard/Library function
+##########################################
+CLI_NAME=$(basename "$0") # Name of the cli
+
+
+# Send the message to the log file and the stdout
+#
+# The log file can be given via the first arg $2
+# Default to the variable ${LOG_FILE}
+function echo_log() {
+
+  LOCAL_LOG_FILE_PATH=${LOG_FILE}
+  if ! [ -z ${2+x} ]; then
+    LOCAL_LOG_FILE_PATH=$2
+  fi
+  MESSAGE=$1
+  echo -e "dokuctl: $MESSAGE" 2>&1 | tee -a "${LOCAL_LOG_FILE_PATH}"
+
+}
+
+# Print the error message $1
+function echo_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  #(>&2 echo -e "${RED}$1${NC}")
+  echo_log "${RED}$1${NC}"
+}
+
+function finish() {
+  echo_log "Script terminated\n"
+}
+trap finish EXIT
+
+######################################
+# Variable Init and Mandatory
+######################################
+if [ -z "$DOKUWIKI_HOME" ]; then
+  echo_err "The env (DOKUWIKI_HOME) is mandatory"
+  exit 1
+fi;
+DOKUWIKI_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-$DOKUWIKI_HOME/data}
+DOKUWIKI_PAGES_DIR="$DOKUWIKI_SAVE_DIR/pages"
+DOKUWIKI_META_DIR="$DOKUWIKI_SAVE_DIR/meta"
+
+######################################
+# Command
+######################################
+function update_index(){
+
+    echo_log "Updating the index"
+    # If the volume has not enough space, the data sub-directory
+    # may have not been created, we create them to not break the search
+    mkdir -p "$DOKUWIKI_SAVE_DIR/attic"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/cache"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/index"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/locks"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/log"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/media_meta"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/media_attic"
+    mkdir -p "$DOKUWIKI_META_DIR"
+    mkdir -p "$DOKUWIKI_SAVE_DIR/tmp"
+
+    php "$DOKUWIKI_HOME"/bin/indexer.php -q
+}
+
+# Clean the meta directory
+# This script will clean the meta directory
+# History in this thread: https://forum.dokuwiki.org/d/10570-meta-folder-full-of-spam/10
+function clean_meta(){
+
+  pagesDir=${1:-$DOKUWIKI_PAGES_DIR}
+  metaDir=${2:-$DOKUWIKI_DOKUWIKI_META_DIR}
+
+  echo_log "Cleaning the meta directory"
+  # Iterate over each directory in meta
+  find "$metaDir" -type d | while read -r dir; do
+      # Get the relative path from metaDir
+      relative_path="${dir#$metaDir}"
+
+      # Check if the corresponding directory exists in pagesDir
+      if [ ! -d "$pagesDir$relative_path" ]; then
+          # If it doesn't exist, delete the directory in metaDir
+          echo_log "  * Deleting dir: $dir"
+          rm -rf "$dir"
+      fi
+  done
+
+  # Iterate over each file in meta
+  # A corresponding page file should exist in pages
+  # Files extension in meta may be `meta`, `indexed` or `changes`
+  find "$metaDir" -type f | while read -r metaFile; do
+
+  	# Get the relative path from metaDir
+    relative_path="${metaFile#$metaDir}"
+
+    # Get away of the ext
+  	relative_path_without_ext="${relative_path%.*}"
+
+  	# Add txt
+  	relative_page_path="${relative_path_without_ext}.txt"
+
+    # Check if the corresponding page exists in pages
+    if [ ! -f "$pagesDir$relative_page_path" ]; then
+        # If it doesn't exist, delete the file in meta
+        echo_log "  * Deleting file: $metaFile"
+        rm -f "$metaFile"
+    fi
+
+  done
+
+}
+
+function print_usage() {
+
+  echo ""
+  echo "Usage of the cli ${CLI_NAME}"
+  echo ""
+  echo "   ${CLI_NAME} command [--option[=value] ...]"
+  echo ""
+  echo "where command is one of:"
+  echo "     * help - this help"
+  echo "     * index - index the wiki"
+  echo "     * clean - maintenance to clean the wiki"
+  echo ""
+
+}
+
+declare -a OPTIONS
+# Parsing
+for arg in "$@"; do
+  case "$arg" in
+  --*)
+    OPTIONS+=("$arg")
+    shift
+    ;;
+  *)
+    # Command
+    COMMAND=$1
+    echo "Command ($COMMAND) found"
+    shift
+    ;;
+  esac
+done
+
+if [ -z "$COMMAND" ]; then
+  echo 'No command was given, list chosen.'
+  COMMAND='ls'
+fi
+
+echo
+echo "${CLI_NAME^} ${COMMAND^}"
+echo "-------------------------------------------"
+echo ""
+instantOs
+echo ""
+case ${COMMAND} in
+index)
+  update_index
+  ;;
+help)
+  print_usage
+  ;;
+*)
+  echo_err "The command $COMMAND is unknown"
+  print_usage
+  exit 1
+  ;;
+esac

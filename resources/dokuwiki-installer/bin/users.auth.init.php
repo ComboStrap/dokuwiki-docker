@@ -15,14 +15,20 @@
 
 error_reporting(E_ERROR);
 
-if (!defined('DOKU_INC')) define('DOKU_INC', '/var/www/html/');
-if (!defined('DOKU_LOCAL')) define('DOKU_LOCAL', DOKU_INC . 'conf/');
+$DOKUWIKI_HOME = getenv('DOKUWIKI_HOME');
+if($DOKUWIKI_HOME === false){
+    echo "DOKUWIKI_HOME env variable should be set.\n";
+    exit(1);
+}
+
+if (!defined('DOKU_INC')) define('DOKU_INC', $DOKUWIKI_HOME);
+if (!defined('DOKU_LOCAL')) define('DOKU_LOCAL', DOKU_INC . '/conf');
 require_once(DOKU_INC . 'inc/init.php');
 
 /**
  * File should not exists
  */
-$filePath = DOKU_LOCAL . 'users.auth.php';
+$filePath = DOKU_LOCAL . '/users.auth.php';
 if (file_exists($filePath)) {
     echo "User File ($filePath) already exists.\n";
     exit(1);

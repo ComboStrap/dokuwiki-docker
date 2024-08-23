@@ -1,0 +1,107 @@
+#!/bin/bash
+
+################
+# Install (users.auth.php, local.conf and acl.auth.php)
+################
+# The https://www.dokuwiki.org/installer but somewhat scripted
+# The dokuwiki docker command cli and function
+
+
+################
+# Library Functions
+################
+echo_info(){
+  echo "DokuWiki Docker Installer: $1"
+}
+
+# Print the error message $1
+echo_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  #(>&2 echo -e "${RED}$1${NC}")
+  echo_info "${RED}$1${NC}"
+}
+
+################
+# Start
+################
+
+if [ -z "$DOKUWIKI_HOME" ]; then
+  echo_info "The env variable (DOKUWIKI_HOME)is mandatory"
+  exit 1
+fi;
+
+# Parameters
+# The policy of the [installer](https://www.dokuwiki.org/installer)
+DOKU_DOCKER_ACL_POLICY=${DOKU_DOCKER_ACL_POLICY:-readonly}
+
+
+DOKUWIKI_INSTALLER_HOME="$(dirname "$(dirname "$(realpath "$0")")")"
+
+# Where Dokuwiki is installed
+export DOKUWIKI_HOME=${DOKUWIKI_HOME:-'/var/www/html'}
+
+echo_info "Installation configuration with the ACL policy '$DOKU_DOCKER_ACL_POLICY'"
+
+## Local.php should be first
+# as it's used by the script when creating the user file
+DOKUWIKI_LOCAL_CONF_FILE=${DOKUWIKI_HOME}/conf/local.php
+if [[ ! -f $DOKUWIKI_LOCAL_CONF_FILE ]]; then
+  echo_info "  * conf/local.php: Dokuwiki Local conf not present copying the default one"
+  cp "$DOKUWIKI_INSTALLER_HOME"/meta/local.php "$DOKUWIKI_LOCAL_CONF_FILE"
+else
+  echo_info "  * conf/local.php: Dokuwiki Local conf already present"
+fi
+
+DOKUWIKI_ACL_FILE=$DOKUWIKI_HOME/conf/acl.auth.php
+DOKUWIKI_USERS_FILE=$DOKUWIKI_HOME/conf/users.auth.php
+case "$DOKU_DOCKER_ACL_POLICY" in
+    # ReadOnly Wiki (read for everyone, write and upload for no one)
+    "readonly")
+
+        if [[ ! -f $DOKUWIKI_ACL_FILE ]]; then
+          echo_info "  * conf/acl.auth.php: Read only ACL configured"
+          cp "$DOKUWIKI_INSTALLER_HOME"/meta/readonly/acl.auth.php "$DOKUWIKI_ACL_FILE"
+        else
+          echo_info "  * conf/acl.auth.php: Nothing Done - Dokuwiki Acl already present"
+        fi
+
+        if [[ ! -f $DOKUWIKI_USERS_FILE ]]; then
+          cp -f "$DOKU_DOCKER_HOME"/meta/install/readonly/users.auth.php "$DOKUWIKI_USERS_FILE"
+          echo_info "  * conf/users.auth.php: Empty User dictionary copied"
+        else
+          echo_info "  * conf/users.auth.php: Nothing Done - Already present"
+        fi
+
+      ;;
+    # Public Wiki (read for everyone, write and upload for registered users)
+    "public" | "pubupload" | "public-upload")
+
+      if [[ ! -f $DOKUWIKI_ACL_FILE ]]; then
+          echo_info "  * conf/acl.auth.php: Public ACL configured"
+          cp "$DOKU_DOCKER_HOME"/meta/install/public/acl.auth.php "$DOKUWIKI_ACL_FILE"
+        else
+          echo_info "  * conf/acl.auth.php: Nothing done - already present"
+      fi
+
+      if [[ ! -f $DOKUWIKI_USERS_FILE ]]; then
+          if [ -z "$DOKU_DOCKER_ADMIN_NAME" ]; then
+            echo_info "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin name is mandatory. Set it with the environment variable (DOKU_DOCKER_ADMIN_NAME) "
+            exit 1
+          fi;
+          if [ -z "$DOKU_DOCKER_ADMIN_PASSWORD" ]; then
+            echo_info "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin password is mandatory. Set it with the environment variable ($DOKU_DOCKER_ADMIN_PASSWORD) "
+            exit 1
+          fi
+          DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-admin@localhost}
+          echo_info "  * conf/users.auth.php: Creating the user ($DOKU_DOCKER_ADMIN_NAME)"
+          php "$DOKUWIKI_INSTALLER_HOME"/bin/users.auth.init.php "$DOKU_DOCKER_ADMIN_NAME" "$DOKU_DOCKER_ADMIN_PASSWORD" "$DOKU_DOCKER_ADMIN_EMAIL"
+        else
+          echo_info "  * conf/users.auth.php: Nothing done - already present"
+      fi
+    ;;
+    *)
+      echo_info "The mode (ie DOKU_DOCKER_ACL_POLICY) should have the value 'readonly' or 'public' not ($DOKU_DOCKER_ACL_POLICY)"
+      exit 1
+    ;;
+esac

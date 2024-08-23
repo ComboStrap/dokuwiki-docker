@@ -5,4 +5,10 @@
  * This ensures that DOKU_INC is is always pointing to the correct location within the container,
  * even when the entry point is a plugin.
  */
-if (!defined('DOKU_INC')) define('DOKU_INC', '/var/www/html/');
+
+$DOKUWIKI_HOME = getenv('DOKUWIKI_HOME');
+if($DOKUWIKI_HOME === false){
+    echo "DOKUWIKI_HOME env variable should be set.\n";
+    exit(1);
+}
+if (!defined('DOKU_INC')) define('DOKU_INC', "$DOKUWIKI_HOME/");

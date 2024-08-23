@@ -5,6 +5,13 @@
  */
 
 /**
+ * ACL is mandatory
+ * It's a backward compatibility conf
+ * https://www.dokuwiki.org/config:useacl
+ */
+$conf['useacl'] = 1;
+
+/**
  * URL rewrite is on
  * https://www.dokuwiki.org/config:im_convert
  */

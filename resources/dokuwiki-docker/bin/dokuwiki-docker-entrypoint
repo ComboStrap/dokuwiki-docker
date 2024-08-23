@@ -134,10 +134,10 @@ fi
 # DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
 # if [[ ! -f $DOKU_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKU_DOCKER_VERSION_FILE)" -ne $DOKU_DOCKER_VERSION ]; then
 dd_echo Dokuwiki docker
-dd_echo "  * Copying Dokuwiki docker extra files"
-cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker "$DOKUWIKI_HOME"
-dd_echo "  * Copying Dokuwiki hook files"
-cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-docker/dokuwiki/* "$DOKUWIKI_HOME"
+dd_echo "  * Copying Dokuwiki docker preload.php"
+cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-conf/preload.php "$DOKUWIKI_HOME/inc/preload.php"
+dd_echo "  * Copying Dokuwiki Docker Status file"
+cp -r -f "$DOKU_DOCKER_HOME"/meta/status/* "$DOKUWIKI_HOME/dokuwiki-docker"
 
 
 ################
@@ -158,8 +158,7 @@ dd_install_plugins
 # Install (users.auth.php, local.conf and acl.auth.php)
 ################
 # The https://www.dokuwiki.org/installer but somewhat scripted
-dd_install_configuration
-
+dokuwiki-installer
 
 
 ################
@@ -193,19 +192,7 @@ DOKU_DOCKER_SEARCH_INDEX=${DOKU_DOCKER_SEARCH_INDEX:-on}
 if [[ "$DOKU_DOCKER_SEARCH_INDEX" != "off" ]]; then
   dd_echo "Updating search index"
 
-  # If the volume has not enough space, the data sub-directory
-  # may have not been created, we create them to not break the search
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/attic"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/cache"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/index"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/locks"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/log"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/media_meta"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/media_attic"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/meta"
-  mkdir -p "$DOKU_DOCKER_SAVE_DIR/tmp"
-
-  php bin/indexer.php -q
+  dokuctl index
 
 else
   dd_echo "Automatic Update of search index disabled"
