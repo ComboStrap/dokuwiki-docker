@@ -204,15 +204,15 @@ therefore you need to run it via `docker exec`
 
 For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
 
-### Disable Automatic Default WebSite Installation
+### Disable Automatic Default Starter WebSite Installation
 
-By default, this image will [install the default ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-5gxpcdgy#default_website)
+By default, this image will [install the default Starter ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-5gxpcdgy#default_website)
 automatically after the initial Dokuwiki Installation.
 
-To disable this behavior, you need to set the `DOKU_DOCKER_DEFAULT_SITE` environment variable to `false`
+To disable this behavior, you need to set the `DOKU_DOCKER_STARTER_SITE` environment variable to `false`
 
 ```bash
-docker run -e DOKU_DOCKER_DEFAULT_SITE=false
+docker run -e DOKU_DOCKER_STARTER_SITE=false
 ```
 
 ### Set your ComboStrap Git WebSite

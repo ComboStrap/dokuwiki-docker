@@ -35,6 +35,7 @@ docker run \
   --user 1000:1000 \
   -e DOKU_DOCKER_STRICT=true \
   -e DOKU_DOCKER_ENV=dev \
+  -e DOKU_DOCKER_STARTER_SITE=false \
   -v $PWD/resources/dokuwiki-docker:/opt/dokuwiki-docker \
   -v $PWD/resources/dokuwiki-installer:/opt/dokuwiki-installer \
   -v $PWD/resources/comboctl:/opt/comboctl \

@@ -89,7 +89,12 @@ install_site() {
     echo_log "Cloning the site into: $TEMP_DIR"
     git clone "$1" "$TEMP_DIR"
     echo_log "Moving the site into: $DOKUWIKI_HOME"
-    mv -f "$TEMP_DIR"/* "$DOKUWIKI_HOME"
+    find "$TEMP_DIR" -type f | while read -r FILE_PATH; do
+        FILE_RELATIVE_PATH=${FILE_PATH#$TEMP_DIR}
+        FILE_RELATIVE_DIR=$(dirname "$FILE_RELATIVE_PATH")
+        mkdir -p "$DOKUWIKI_HOME/$FILE_RELATIVE_DIR"
+        mv -f "$FILE_PATH" "$DOKUWIKI_HOME/$FILE_RELATIVE_PATH"
+    done
     echo_log "Cleaning up"
     rm -rf "$TEMP_DIR"
 
@@ -121,7 +126,7 @@ function clean_meta(){
   # Iterate over each file in meta
   # A corresponding page file should exist in pages
   # Files extension in meta may be `meta`, `indexed` or `changes`
-  find "$metaDir" -type f | while read -r metaFile; do
+  find "$metaDir" -type FILE_PATH | while read -r metaFile; do
 
   	# Get the relative path from metaDir
     relative_path="${metaFile#$metaDir}"

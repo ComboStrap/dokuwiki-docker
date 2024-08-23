@@ -115,15 +115,25 @@ EXPOSE 80
 COPY resources/conf/caddy/Caddyfile /Caddyfile
 #### Bash (to get the same env with `docker exec bash -l`)
 ADD --chmod=0755 resources/conf/bash/dokuwiki-docker-env.sh /etc/profile.d/dokuwiki-docker-env.sh
+### Third User
+RUN chmod 0777 /home # Gives permission to the running user to create its own HOME
 
 ####################################
-# Dokuwiki Docker App Install
+# Dokuwiki Docker Install
 ####################################
 RUN mkdir "/opt/dokuwiki-docker"
 COPY resources/dokuwiki-docker /opt/dokuwiki-docker
 RUN chmod 0755 /opt/dokuwiki-docker/bin/*
 ENV PATH="/opt/dokuwiki-docker/bin:${PATH}"
 ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
+
+####################################
+# Dokuwiki Installer
+####################################
+RUN mkdir "/opt/dokuwiki-installer"
+COPY resources/dokuwiki-installer /opt/dokuwiki-installer
+RUN chmod 0755 /opt/dokuwiki-installer/bin/*
+ENV PATH="/opt/dokuwiki-installer/bin:${PATH}"
 
 ####################################
 # Phpctl App Install

@@ -85,11 +85,13 @@ case "$DOKU_DOCKER_ACL_POLICY" in
       fi
 
       if [[ ! -f $DOKUWIKI_USERS_FILE ]]; then
-          if [ -z "$DOKU_DOCKER_ADMIN_NAME" ]; then
+          DOKU_DOCKER_ADMIN_NAME=${$DOKU_DOCKER_ADMIN_NAME:-}
+          if [ "$DOKU_DOCKER_ADMIN_NAME" == "" ]; then
             echo_info "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin name is mandatory. Set it with the environment variable (DOKU_DOCKER_ADMIN_NAME) "
             exit 1
           fi;
-          if [ -z "$DOKU_DOCKER_ADMIN_PASSWORD" ]; then
+          DOKU_DOCKER_ADMIN_PASSWORD=${DOKU_DOCKER_ADMIN_PASSWORD:-}
+          if [ "$DOKU_DOCKER_ADMIN_PASSWORD" == "" ]; then
             echo_info "For an acl policy ($DOKU_DOCKER_ACL_POLICY), the admin password is mandatory. Set it with the environment variable ($DOKU_DOCKER_ADMIN_PASSWORD) "
             exit 1
           fi

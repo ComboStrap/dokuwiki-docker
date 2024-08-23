@@ -16,6 +16,20 @@ else
   dd_echo "Non-Strict Mode"
 fi;
 
+################
+# Executing User Env
+################
+USER_UID=$(id -u)
+USER_NAME=$(whoami 2> /dev/null || echo 'noname')
+dd_echo "Executing User: $USER_NAME UID: $USER_UID GID: $(id -g)"
+if [ "$HOME" == '/' ] && [ "$USER_UID" != '0' ]; then
+  export HOME=/home/$USER_NAME
+  dd_echo "User Not Root, creating and setting HOME=$HOME"
+  # to avoid error with the HOME directory
+  # such as `error: could not lock config file //.gitconfig: Permission denied`
+  # Issue: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/37408
+  mkdir -p "$HOME"
+fi
 
 #############################################
 # Script
@@ -171,8 +185,8 @@ if [[ ! -d "$DOKUWIKI_HOME/.git" ]] && [ "$ROOT_PAGES_COUNT" == "0" ]; then
     comboctl install_site "$DOKU_DOCKER_GIT_SITE"
   else
     ## Install the default website if not disabled
-    DOKU_DOCKER_DEFAULT_SITE=${DOKU_DOCKER_DEFAULT_SITE:-true}
-    if [[ "${DOKU_DOCKER_DEFAULT_SITE}" != "false" ]]; then
+    DOKU_DOCKER_STARTER_SITE=${DOKU_DOCKER_STARTER_SITE:-true}
+    if [[ "${DOKU_DOCKER_STARTER_SITE}" != "false" ]]; then
       STARTER_GIT_WEB_SITE=https://github.com/ComboStrap/site-default.git
       dd_echo "Installing Starter WebSite from Git Repo: $STARTER_GIT_WEB_SITE"
         comboctl install_site "$STARTER_GIT_WEB_SITE"
@@ -204,18 +218,15 @@ comboctl install_plugins
 dokuwiki-installer
 
 
-################
-# Executing User
-################
-dd_echo "Executing User: $(whoami) UID: $(id -u) GID: $(id -g)\n"
 
 #####################
 # Php Info Security
 # The php info script should be available only from the admin user
 # because it can show environment variables
 #####################
-DOKU_DOCKER_ADMIN_NAME=${DOKU_DOCKER_ADMIN_NAME:-admin}
-if [ -z "$DOKU_DOCKER_ADMIN_PASSWORD" ]; then
+export DOKU_DOCKER_ADMIN_NAME=${DOKU_DOCKER_ADMIN_NAME:-admin}
+export DOKU_DOCKER_ADMIN_PASSWORD=${DOKU_DOCKER_ADMIN_PASSWORD:-}
+if [ "$DOKU_DOCKER_ADMIN_PASSWORD" == "" ]; then
   dd_echo "No admin password found. Deleting phpinfo.php"
   # No password set, no phpinfo should be available
   rm dokuwiki-docker/phpinfo.php
@@ -233,9 +244,9 @@ DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH=$(caddy hash-password --plaintext "$DOKU_D
 ################
 DOKU_DOCKER_SEARCH_INDEX=${DOKU_DOCKER_SEARCH_INDEX:-on}
 if [[ "$DOKU_DOCKER_SEARCH_INDEX" != "off" ]]; then
-  dd_echo "Updating search index"
 
-  dokuctl index
+  dd_echo "Updating search index"
+  comboctl index
 
 else
   dd_echo "Automatic Update of search index disabled"
