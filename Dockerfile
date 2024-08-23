@@ -46,6 +46,18 @@ RUN install-php-extensions gd intl opcache bz2
 COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 
 ####################################
+# Dokuwiki Download
+# We add Dokuwiki in the image
+# Why?
+# * This is the most stable piece of Dokuwiki
+# * If we run the image for script development, we don't need to download it
+####################################
+ENV DOKUWIKI_VERSION="2024-02-06b"
+RUN curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" \
+    -o /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz \
+    && chmod 0777 /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz
+
+####################################
 # Healthcheck
 # The file name is the standard name configuration in php-fpm
 # It's used only by Docker
@@ -122,9 +134,9 @@ RUN chmod 0755 /opt/phpctl/bin/*
 ENV PATH="/opt/phpctl/bin:${PATH}"
 
 ####################################
-# dokuctl App Install
+# ComboCtl App Install
 ####################################
-RUN mkdir "/opt/dokuctl"
-COPY resources/dokuctl /opt/dokuctl
-RUN chmod 0755 /opt/dokuctl/bin/*
-ENV PATH="/opt/dokuctl/bin:${PATH}"
+RUN mkdir "/opt/comboctl"
+COPY resources/comboctl /opt/comboctl
+RUN chmod 0755 /opt/comboctl/bin/*
+ENV PATH="/opt/comboctl/bin:${PATH}"

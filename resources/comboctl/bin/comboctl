@@ -18,7 +18,7 @@ CLI_NAME=$(basename "$0") # Name of the cli
 # Echo a message
 function echo_log() {
 
-  echo -e "dokuctl: $1"
+  echo -e "$CLI_NAME: ${1:-}"
 
 }
 
@@ -68,6 +68,34 @@ function update_index(){
     php "$DOKUWIKI_HOME"/bin/indexer.php -q
 }
 
+# The first parameter is the git URI
+#
+# for ssh:
+#    install_site git@github.com:ComboStrap/site-com-combostrap.git
+#
+# for https
+#    install_site https://github.com:ComboStrap/site-com-combostrap
+#
+install_site() {
+
+    echo_log "Installing the site: $1"
+    # The default globbing in bash does not include filenames starting with a . (ie hidden files)
+    # We want to include the `.gitignore` to avoid including the whole dokuwiki software
+    shopt -s dotglob
+    # safe directory to resolve `fatal: detected dubious ownership in repository at '/var/www/html'`
+    git config --global --add safe.directory "$DOKUWIKI_HOME"
+    # Create a temp directory without any conflict
+    TEMP_DIR=$(mktemp -d)
+    echo_log "Cloning the site into: $TEMP_DIR"
+    git clone "$1" "$TEMP_DIR"
+    echo_log "Moving the site into: $DOKUWIKI_HOME"
+    mv -f "$TEMP_DIR"/* "$DOKUWIKI_HOME"
+    echo_log "Cleaning up"
+    rm -rf "$TEMP_DIR"
+
+}
+
+
 # Clean the meta directory
 # This script will clean the meta directory
 # History in this thread: https://forum.dokuwiki.org/d/10570-meta-folder-full-of-spam/10
@@ -115,6 +143,41 @@ function clean_meta(){
 
 }
 
+# Install Plugins
+# if a plugins.dat file is found
+install_plugins(){
+
+    PLUGINS_FILE="${DOKU_DOCKER_SAVE_DIR}/combo/instance/plugins.dat"
+    if [[ -f $PLUGINS_FILE ]]; then
+      echo_log "Plugins Installation"
+      grep -v '^#' "$PLUGINS_FILE" |
+          while IFS=' ' read -r PLUGIN_NAME PLUGIN_ARCHIVE_URL
+          do
+            # If PLUGIN_NAME is empty, it's an empty line
+            if [ -n "$PLUGIN_NAME" ]; then
+              # Target Directory
+              PLUGIN_TARGET_DIRECTORY="lib/plugins/$PLUGIN_NAME"
+              if [[ ! -d $PLUGIN_TARGET_DIRECTORY ]]; then
+                echo_log "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
+                echo_log "    * Get the archive at ($PLUGIN_ARCHIVE_URL)"
+                curl --fail -L "$PLUGIN_ARCHIVE_URL" -o "$PLUGIN_NAME.zip"
+                echo_log "    * Create the directory"
+                mkdir -p "$PLUGIN_TARGET_DIRECTORY"
+                # > /dev/null -> no output
+                echo_log "    * Unpack the archive"
+                bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME" > /dev/null 2>&1
+                echo_log "    * Remove the archive"
+                rm "$PLUGIN_NAME.zip"
+              else
+                echo_log "  > Plugin $PLUGIN_NAME already installed skipping"
+              fi
+            fi
+          done
+    else
+        echo_log "No plugin files found, skipping installation"
+    fi
+}
+
 function print_usage() {
 
   echo ""
@@ -123,9 +186,11 @@ function print_usage() {
   echo "   ${CLI_NAME} command [--option[=value] ...]"
   echo ""
   echo "where command is one of:"
-  echo "     * help - this help"
-  echo "     * index - index the wiki"
-  echo "     * clean - maintenance to clean the wiki"
+  echo "     * help            - this help"
+  echo "     * index           - index the wiki"
+  echo "     * install_site    - install a combo site"
+  echo "     * install_plugins - install the plugins of a combo site"
+  echo "     * clean           - maintenance script to clean the wiki"
   echo ""
 
 }
@@ -133,7 +198,7 @@ function print_usage() {
 # Lock Monitoring (It seems)
 function lock() {
 
-  cd $DOKUWIKI_LOCKS_DIR || exit 1
+  cd "$DOKUWIKI_LOCKS_DIR" || exit 1
   while :; do
     ls -A1
     sleep 0.1
@@ -142,6 +207,7 @@ function lock() {
 
 }
 
+COMMAND=""
 declare -a OPTIONS
 # Parsing
 for arg in "$@"; do
@@ -151,26 +217,37 @@ for arg in "$@"; do
     shift
     ;;
   *)
-    # Command
-    COMMAND=$1
-    echo "Command ($COMMAND) found"
+    # Command or arg
+    if [ "$COMMAND" == "" ]; then
+        COMMAND=$1
+        echo_log "Command ($COMMAND) found"
+      else
+        echo_log "Argument ($arg) found"
+        ARGUMENTS+=("$arg")
+    fi
     shift
     ;;
   esac
 done
 
 if [ -z "$COMMAND" ]; then
-  echo 'No command was given, list chosen.'
+  echo_log 'No command was given, list chosen.'
   COMMAND='ls'
 fi
 
-echo
-echo "${CLI_NAME^} ${COMMAND^}"
-echo "-------------------------------------------"
-echo ""
+echo_log
+echo_log "${CLI_NAME^} ${COMMAND^}"
+echo_log "-------------------------------------------"
+echo_log ""
 case ${COMMAND} in
 index)
   update_index
+  ;;
+install_site)
+  install_site "${ARGUMENTS[@]}"
+  ;;
+install_plugins)
+  install_plugins
   ;;
 help)
   print_usage

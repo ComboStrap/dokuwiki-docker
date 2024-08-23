@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Functions
+SCRIPT_DIR="$(dirname "$0")"
+source "$SCRIPT_DIR/dd"
+
 if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # flag
   # e - Exit if any error
@@ -7,12 +11,11 @@ if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
   # E - the ERR trap is inherited by shell functions
   set -Eeuo pipefail
+  dd_echo "Strict Mode"
+else
+  dd_echo "Non-Strict Mode"
 fi;
 
-
-# Functions
-SCRIPT_DIR="$(dirname "$0")"
-source "$SCRIPT_DIR/dd"
 
 #############################################
 # Script
@@ -79,16 +82,37 @@ export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
 export DOKUWIKI_HOME='/var/www/html'
 # The path to the dokuwiki data
 export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
+
 if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
 
     # Install is done by downloading
     # Download DokuWiki from the official website or from GitHub
 
     dd_echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
-    # --no-same-owner so that the files have root as owner
-    curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz || curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o dokuwiki.tgz \
-        && tar --no-same-owner -xzf dokuwiki.tgz --strip-components=1 \
-        && rm dokuwiki.tgz
+    DOKUWIKI_ARCHIVE_PATH="/opt/dokuwiki-${DOKUWIKI_VERSION}.tgz"
+
+    # Get the archive
+    # Last Dokuwiki version is stored in /opt
+    DOKUWIKI_ARCHIVE_DOWNLOADED=false
+    if [[ ! -f $DOKUWIKI_ARCHIVE_PATH ]]; then
+      dd_echo "  * Download version ${DOKUWIKI_VERSION} ..."
+      curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o "$DOKUWIKI_ARCHIVE_PATH" ||
+        curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o "$DOKUWIKI_ARCHIVE_PATH"
+        DOKUWIKI_ARCHIVE_DOWNLOADED=true
+    else
+      dd_echo "  * Version ${DOKUWIKI_VERSION} found in the image"
+    fi
+
+    # Unzip the archive
+    # --no-same-owner option so that the files have root as owner
+    dd_echo "  * Unzipping version ${DOKUWIKI_VERSION} ..."
+    tar --no-same-owner -xzf "$DOKUWIKI_ARCHIVE_PATH" --strip-components=1
+
+    # Clean Up
+    if [ $DOKUWIKI_ARCHIVE_DOWNLOADED == "true" ]; then
+        dd_echo "  * Removing the download version ${DOKUWIKI_VERSION} ..."
+        rm "$DOKUWIKI_ARCHIVE_PATH"
+    fi;
 
     # If a user want to have `data` as namespace. ie https://dokuwiki.com/data/mypage
     # it needs to set the `savedir` (https://www.dokuwiki.org/config:savedir) to another value than data
@@ -106,13 +130,6 @@ if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
     INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
     mkdir -p $INTER_WIKI_BACKUP_DIR
     mv lib/images/interwiki/* $INTER_WIKI_BACKUP_DIR
-
-    ## Install the default website if a web site was not given
-    if [ -z "$DOKU_DOCKER_GIT_SITE" ] && [[ "${DOKU_DOCKER_DEFAULT_SITE}" != "false" ]] && [[ ! -d './.git' ]]; then
-      dd_install_site https://github.com/ComboStrap/site-default.git
-      # Remove git
-      rm -rf .git
-    fi
 
 fi
 
@@ -137,6 +154,7 @@ dd_echo Dokuwiki docker
 dd_echo "  * Copying Dokuwiki docker preload.php"
 cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-conf/preload.php "$DOKUWIKI_HOME/inc/preload.php"
 dd_echo "  * Copying Dokuwiki Docker Status file"
+mkdir -p "$DOKUWIKI_HOME/dokuwiki-docker"
 cp -r -f "$DOKU_DOCKER_HOME"/meta/status/* "$DOKUWIKI_HOME/dokuwiki-docker"
 
 
@@ -144,15 +162,40 @@ cp -r -f "$DOKU_DOCKER_HOME"/meta/status/* "$DOKUWIKI_HOME/dokuwiki-docker"
 # Git WebSite
 ###############
 DOKU_DOCKER_GIT_SITE=${DOKU_DOCKER_GIT_SITE:-}
-if [ "$DOKU_DOCKER_GIT_SITE" != "" ] && [[ ! -d './.git' ]]; then
-  dd_echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
-  dd_install_site "$DOKU_DOCKER_GIT_SITE"
+DOKUWIKI_PAGES_DIR=$DOKU_DOCKER_SAVE_DIR/pages
+ROOT_PAGES_COUNT=$(find "$DOKUWIKI_PAGES_DIR" -maxdepth 1 -type f | wc -l)
+if [[ ! -d "$DOKUWIKI_HOME/.git" ]] && [ "$ROOT_PAGES_COUNT" == "0" ]; then
+  dd_echo "No Website installed detected"
+  if [ "$DOKU_DOCKER_GIT_SITE" != "" ]; then
+    dd_echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
+    comboctl install_site "$DOKU_DOCKER_GIT_SITE"
+  else
+    ## Install the default website if not disabled
+    DOKU_DOCKER_DEFAULT_SITE=${DOKU_DOCKER_DEFAULT_SITE:-true}
+    if [[ "${DOKU_DOCKER_DEFAULT_SITE}" != "false" ]]; then
+      STARTER_GIT_WEB_SITE=https://github.com/ComboStrap/site-default.git
+      dd_echo "Installing Starter WebSite from Git Repo: $STARTER_GIT_WEB_SITE"
+        comboctl install_site "$STARTER_GIT_WEB_SITE"
+        # Remove git
+        rm -rf .git
+      fi
+  fi;
+else
+  dd_echo "No combo website installation because:"
+  if [ "$ROOT_PAGES_COUNT" != "0" ]; then
+    dd_echo "  * Website installed detected with $ROOT_PAGES_COUNT pages at the root"
+  else
+    dd_echo "  * Git was detected"
+  fi;
 fi
+
 
 ################
 # Install Plugins
+# We install plugin not with a Site installation
+# because if the dev develops, it may change just the plugins file
 ################
-dd_install_plugins
+comboctl install_plugins
 
 ################
 # Install (users.auth.php, local.conf and acl.auth.php)

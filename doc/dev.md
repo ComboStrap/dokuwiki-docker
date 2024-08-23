@@ -23,7 +23,7 @@ docker run \
   -e DOKU_DOCKER_ENV=dev \
   -v $PWD/resources/dokuwiki-docker:/opt/dokuwiki-docker \
   -v $PWD/resources/dokuwiki-installer:/opt/dokuwiki-installer \
-  -v $PWD/resources/dokuctl:/opt/dokuctl \
+  -v $PWD/resources/comboctl:/opt/comboctl \
   -v $PWD/resources/phpctl:/opt/phpctl \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```

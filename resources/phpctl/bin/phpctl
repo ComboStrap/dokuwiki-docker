@@ -374,6 +374,7 @@ function print_usage() {
 
 processName="php-fpm"
 declare -a OPTIONS
+declare -a ARGUMENTS
 # Parsing
 for arg in "$@"; do
   case "$arg" in
@@ -383,8 +384,13 @@ for arg in "$@"; do
     ;;
   *)
     # Command
-    COMMAND=$1
-    echo "Command ($COMMAND) found"
+    if [ -z "$COMMAND" ]; then
+        COMMAND=$1
+        echo "Command ($COMMAND) found"
+      else
+        echo "Argument ($arg) found"
+        ARGUMENTS+=("$arg")
+    fi
     shift
     ;;
   esac

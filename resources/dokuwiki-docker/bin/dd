@@ -5,65 +5,7 @@ dd_echo(){
   echo "DokuWiki Docker: $1"
 }
 
-# The first parameter is the git URI
-#
-# for ssh:
-#    dd_install_site git@github.com:ComboStrap/site-com-combostrap.git
-#
-# for https
-#    dd_install_site https://github.com:ComboStrap/site-com-combostrap
-#
-dd_install_site() {
 
-    dd_echo "Installing the site: $1"
-    # The default globbing in bash does not include filenames starting with a . (ie hidden files)
-    # We want to include the `.gitignore` to avoid including the whole dokuwiki software
-    shopt -s dotglob
-    # safe directory to resolve `fatal: detected dubious ownership in repository at '/var/www/html'`
-    git config --global --add safe.directory "$PWD"
-    # Create a temp directory without any conflict
-    TEMP_DIR=$(mktemp -d)
-    git clone "$1" "$TEMP_DIR"
-    mv -f "$TEMP_DIR"/* .
-    rm -rf "$TEMP_DIR"
-
-}
-
-# Install Plugins
-# if a plugins.dat file is found
-dd_install_plugins(){
-
-    DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
-    PLUGINS_FILE="${DOKU_DOCKER_SAVE_DIR}/combo/instance/plugins.dat"
-    if [[ -f $PLUGINS_FILE ]]; then
-      dd_echo "Plugins Installation"
-      grep -v '^#' "$PLUGINS_FILE" |
-          while IFS=' ' read -r PLUGIN_NAME PLUGIN_ARCHIVE_URL
-          do
-            # If PLUGIN_NAME is empty, it's an empty line
-            if [ -n "$PLUGIN_NAME" ]; then
-              # Target Directory
-              PLUGIN_TARGET_DIRECTORY="lib/plugins/$PLUGIN_NAME"
-              if [[ ! -d $PLUGIN_TARGET_DIRECTORY ]]; then
-                dd_echo "  > Installing Plugin $PLUGIN_NAME ($PLUGIN_ARCHIVE_URL)"
-                dd_echo "    * Get the archive at ($PLUGIN_ARCHIVE_URL)"
-                curl --fail -L "$PLUGIN_ARCHIVE_URL" -o "$PLUGIN_NAME.zip"
-                dd_echo "    * Create the directory"
-                mkdir -p "$PLUGIN_TARGET_DIRECTORY"
-                # > /dev/null -> no output
-                dd_echo "    * Unpack the archive"
-                bsdtar --strip-components=1 -xvf "$PLUGIN_NAME.zip" -C "lib/plugins/$PLUGIN_NAME" > /dev/null 2>&1
-                dd_echo "    * Remove the archive"
-                rm "$PLUGIN_NAME.zip"
-              else
-                dd_echo "  > Plugin $PLUGIN_NAME already installed skipping"
-              fi
-            fi
-          done
-    else
-        dd_echo "No plugin files found, skipping installation"
-    fi
-}
 
 
 
