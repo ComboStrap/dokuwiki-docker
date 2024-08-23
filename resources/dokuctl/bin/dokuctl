@@ -1,6 +1,13 @@
 #!/bin/bash
 # Command utility for Dokuwiki
 
+# flag
+# e - Exit if any error
+# u - Treat unset variables as an error when substituting
+# o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
+# E - the ERR trap is inherited by shell functions
+set -Eeuo pipefail
+
 
 ##########################################
 # Standard/Library function
@@ -8,18 +15,10 @@
 CLI_NAME=$(basename "$0") # Name of the cli
 
 
-# Send the message to the log file and the stdout
-#
-# The log file can be given via the first arg $2
-# Default to the variable ${LOG_FILE}
+# Echo a message
 function echo_log() {
 
-  LOCAL_LOG_FILE_PATH=${LOG_FILE}
-  if ! [ -z ${2+x} ]; then
-    LOCAL_LOG_FILE_PATH=$2
-  fi
-  MESSAGE=$1
-  echo -e "dokuctl: $MESSAGE" 2>&1 | tee -a "${LOCAL_LOG_FILE_PATH}"
+  echo -e "dokuctl: $1"
 
 }
 
@@ -59,7 +58,7 @@ function update_index(){
     mkdir -p "$DOKUWIKI_SAVE_DIR/attic"
     mkdir -p "$DOKUWIKI_SAVE_DIR/cache"
     mkdir -p "$DOKUWIKI_SAVE_DIR/index"
-    mkdir -p "$DOKUWIKI_DOKUWIKI_LOCKS_DIR"
+    mkdir -p "$DOKUWIKI_LOCKS_DIR"
     mkdir -p "$DOKUWIKI_SAVE_DIR/log"
     mkdir -p "$DOKUWIKI_SAVE_DIR/media_meta"
     mkdir -p "$DOKUWIKI_SAVE_DIR/media_attic"
@@ -169,13 +168,10 @@ echo
 echo "${CLI_NAME^} ${COMMAND^}"
 echo "-------------------------------------------"
 echo ""
-instantOs
-echo ""
 case ${COMMAND} in
 index)
   update_index
   ;;
-
 help)
   print_usage
   ;;

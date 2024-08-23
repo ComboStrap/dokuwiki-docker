@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
+if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # flag
   # e - Exit if any error
   # u - Treat unset variables as an error when substituting

@@ -55,9 +55,8 @@ HEALTHCHECK --timeout=5s \
     CMD curl --silent --fail-with-body http://localhost/dokuwiki-docker/ping.php || exit 1
 
 ####################################
-# Entrypoint and default CMD
+# Default CMD
 ####################################
-ENTRYPOINT ["dokuwiki-docker-entrypoint"]
 # we set the `c` to avoid the below warning:
 # UserWarning: Supervisord is running as root and it is searching
 # for its configuration file in default locations (including its current working directory);
@@ -108,7 +107,24 @@ ADD --chmod=0755 resources/conf/bash/dokuwiki-docker-env.sh /etc/profile.d/dokuw
 ####################################
 # Dokuwiki Docker App Install
 ####################################
-RUN mkdir "/opt/dokuwiki-docker/"
-COPY resources/dokuwiki-docker /opt/dokuwiki-docker/
+RUN mkdir "/opt/dokuwiki-docker"
+COPY resources/dokuwiki-docker /opt/dokuwiki-docker
 RUN chmod 0755 /opt/dokuwiki-docker/bin/*
 ENV PATH="/opt/dokuwiki-docker/bin:${PATH}"
+ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
+
+####################################
+# Phpctl App Install
+####################################
+RUN mkdir "/opt/phpctl"
+COPY resources/phpctl /opt/phpctl
+RUN chmod 0755 /opt/phpctl/bin/*
+ENV PATH="/opt/phpctl/bin:${PATH}"
+
+####################################
+# dokuctl App Install
+####################################
+RUN mkdir "/opt/dokuctl"
+COPY resources/dokuctl /opt/dokuctl
+RUN chmod 0755 /opt/dokuctl/bin/*
+ENV PATH="/opt/dokuctl/bin:${PATH}"

@@ -385,13 +385,13 @@ Performance:
 By default, in production mode, we don't allow any error to occur otherwise the script terminate.
 
 If you want to allow the container to get up, you need to set:
-* the [mode to dev](#set-in-dev-mode)
-* and eventually to disable the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
+* strict to `false`
+* eventually disable the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
 
 Example:
 ```bash
 docker run \
-  -e DOKU_DOCKER_ENV=dev \
+  -e DOKU_DOCKER_STRICT=false \
   -e DOKU_DOCKER_SEARCH_INDEX='off'
   ....
 ```
@@ -468,6 +468,10 @@ docker run \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
+### How to contribute
+
+If you want to contribute to this image, check the [dev page](doc/dev.md)
+that explains how to start the image to develop the script.
  
 
 ## FAQ
