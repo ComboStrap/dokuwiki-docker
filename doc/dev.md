@@ -40,7 +40,7 @@ docker run \
   -v $PWD/resources/dokuwiki-installer:/opt/dokuwiki-installer \
   -v $PWD/resources/comboctl:/opt/comboctl \
   -v $PWD/resources/phpctl:/opt/phpctl \
-  -v $PWD/resources/conf/bash/dokuwiki-docker-env.sh:/etc/profile.d/dokuwiki-docker-env.sh \
+  -v $PWD/resources/conf/bash/bash.bashrc:/etc/bash.bashrc \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 * All scripts run with the above command are from your desktop.

@@ -7,14 +7,15 @@ This repository contains the `Dokuwiki in Docker` image.
 
 Get a Dokuwiki installation with a website in a single line of command.
 
-To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Default Site](https://github.com/ComboStrap/site-default) at http://localhost:8080, execute:
+## Example: Starter Web Site
+
+To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Starter Site](https://github.com/ComboStrap/site-starter) at http://localhost:8080, execute:
 ```bash
-# bash
 docker run \
-  --name combo-site-default \
+  --name combo-site-starter \
   --rm \
   -p 8081:80 \
-  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
+  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-starter' \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
@@ -29,7 +30,7 @@ The table of content (TOC) is available on GitHub at the right corner of this do
 You got out of the box:
 * [Website instance](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
   * You can:
-    * [disable it](#disable-automatic-default-website-installation)
+    * [disable it](#disable-automatic-default-starter-website-installation)
     * or [set your own](#set-your-combostrap-git-website)
 * [Nice URL rewrite ](https://www.dokuwiki.org/rewrite)
 * [Automatic Search Index Update](#how-to-disable-the-automatic-update-of-the-search-index)
@@ -37,13 +38,13 @@ You got out of the box:
 * [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
 * [Monitoring Endpoint](#monitor-php-fpm-with-status-on-localhost-only)
 * Performance:
-  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php)
-  * [OpCache](https://www.php.net/manual/en/book.opcache.php)
+  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
+  * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
-* Search Engine Ready:
-  * [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
-* [Proxy Ready to detect HTTPS in Docker, Kubernetes environment](#is-the-image-proxy-ready)
+* Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
+* [Proxy Ready](#is-the-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
+* [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
 
 ## How to
 
@@ -61,19 +62,19 @@ If you want to set an admin user, you need to set the following variables:
 Example:
 ```bash
 docker run \
-  --name combo-site-default \
+  --name combo-site-starter \
   --rm \
   -p 8081:80 \
   -e DOKU_DOCKER_ACL_POLICY='public' \
   -e DOKU_DOCKER_ADMIN_NAME='admin' \
   -e DOKU_DOCKER_ADMIN_PASSWORD='welcome' \
   -e DOKU_DOCKER_ADMIN_EMAIL='admin@example.com' \
-  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-default' \
+  -e DOKU_DOCKER_GIT_SITE='https://github.com/ComboStrap/site-starter' \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
 The above command:
-* publish the [ComboStrap default install website](https://github.com/ComboStrap/site-default)
+* publish the [ComboStrap default install website](https://github.com/ComboStrap/site-starter)
 * and configure it with the admin user:
   * name `admin`
   * password `welcome`
@@ -91,7 +92,7 @@ Example:
 ```bash
 cd ~/your-site
 docker run \
-  --name combo-site-default \
+  --name combo-site-starter \
   --rm \
   --user 1000:1000 \
   -p 8081:80 \
@@ -113,7 +114,7 @@ to install via the `DOKUWIKI_VERSION` environment.
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
 ```bash
 docker run \
-  --name combo-site-default \
+  --name combo-site-starter \
   --rm \
   -p 8081:80 \
   -e DOKUWIKI_VERSION=2024-02-06b \
@@ -122,7 +123,7 @@ docker run \
 
 ### Get Healthcheck / Liveness / Probes / Container State
 
-If you wish to set a healthcheck point, you may use the [ping.php endpoint](resources/dokuwiki-docker/meta/dokuwiki-docker/ping.php) 
+If you wish to set a healthcheck point, you may use the [ping.php endpoint](resources/dokuwiki-docker/meta/status/ping.php) 
 
 ie `/dokuwiki-docker/ping.php`
 
@@ -178,7 +179,7 @@ Note that you can also check the healthcheck of Php-Fpm at `http://localhost:808
 
 Example: 
 ```bash
-docker exec -ti combo-site-default curl localhost/php-fpm/status?full
+docker exec -ti combo-site-starter curl localhost/php-fpm/status?full
 ```
 ```
 pool:                 www
@@ -222,7 +223,7 @@ you need to set the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
 
 Example:
 ```bash
-docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-default.git
+docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-starter.git
 ```
 
 ### Set in dev mode
@@ -282,17 +283,15 @@ docker run \
 
 ### Get a Bash Shell in the container
 
-To get a bash shell in the container that gets the same environment that the running container
-you need to create a login shell with the `-l` flag
-
 Example:
 ```bash
-docker exec -ti your-container-name bash -l
+docker exec -ti your-container-name bash 
 # example
-docker exec -ti combo-site-default bash -l
+docker exec -ti combo-site-starter bash
 ```
 
-Why? Only login shell will run the [system env script](resources/conf/bash/dokuwiki-docker-env.sh) located in `/etc/profile.d/` directory.
+Note that you get the same environment as the running container
+thanks to the [bash.bashrc](resources/conf/bash/bash.bashrc) located at `/etc/bash.bashrc`.
 
 ### Change the savedir configuration
 
@@ -379,6 +378,52 @@ docker run \
 Performance:
 * In case of rollout, this extra processing should not impact the availability of your container if you set the [readiness probes](#get-healthcheck--liveness--probes--container-state)
 * If the rollout takes too long, you need to set up a [volume](#mount-a-volume) so that the index is only updated and not created from scratch.
+
+### How to clean up a Dokuwiki Instance (maintenance)?
+
+Dokuwiki creates a lot of temporary files that needs to be removed periodically to keep
+the size on the disk small. 
+
+
+The `DokuWiki Docker` image contains the [comboctl cli](resources/comboctl/bin/comboctl) `cleanup` function  
+to do exactly that.
+
+You can execute it like that. 
+Example with the [starter container name](#example-starter-web-site):
+```bash
+docker exec \
+  -e BASH_ENV=/etc/bash.bashrc \
+  combo-site-starter \
+  bash -c 'comboctl cleanup' 
+```
+
+It will:
+* Purge the cache
+* Purge the attic (old revisions)
+* Purge the locks
+* Purge the sqlite log of [Combo cache](https://combostrap.com/docs/cache-management-j4mipb56) and [Router Redirections](https://combostrap.com/docs/combostrap-request-router-venrychc)
+* Clean the meta (pages and media) directories. It ensures that there is one meta, changes or indexed file by page or media.
+
+
+You can control the retention days with the following environment variables:
+* `DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS`: the retention days for the cache (default to 10)
+* `DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS`: the retentions days for the old pages revisions (default to 360)
+* `DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS`: the retentions days for the old media revisions (default to 90)
+
+Example with the [starter container name](#example-starter-web-site)
+```bash
+docker exec \
+  -e BASH_ENV=/etc/bash.bashrc \
+  -e DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS=5 \
+  -e DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS=90 \
+  -e DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS=30 \
+  combo-site-starter \
+  bash -c 'comboctl cleanup' 
+```
+
+The dedicated [Dokuwiki Web Page on maintenance](https://www.dokuwiki.org/tips:maintenance) has more
+information on this topic.
+
 
 ### How to debug a crashing container
 

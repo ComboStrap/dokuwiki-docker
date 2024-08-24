@@ -47,6 +47,12 @@ DOKUWIKI_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-$DOKUWIKI_HOME/data}
 DOKUWIKI_PAGES_DIR="$DOKUWIKI_SAVE_DIR/pages"
 DOKUWIKI_META_DIR="$DOKUWIKI_SAVE_DIR/meta"
 DOKUWIKI_LOCKS_DIR="$DOKUWIKI_SAVE_DIR/locks"
+DOKUWIKI_CACHE_DIR="$DOKUWIKI_SAVE_DIR/cache"
+DOKUWIKI_MEDIA_DIR="$DOKUWIKI_SAVE_DIR/media"
+DOKUWIKI_ATTIC_DIR="$DOKUWIKI_SAVE_DIR/attic"
+DOKUWIKI_MEDIA_ATTIC_DIR="$DOKUWIKI_SAVE_DIR/media_attic"
+DOKUWIKI_MEDIA_META_DIR="$DOKUWIKI_SAVE_DIR/media_meta"
+DOKUWIKI_TMP_DIR="$DOKUWIKI_SAVE_DIR/tmp"
 
 ######################################
 # Command
@@ -56,15 +62,15 @@ function update_index(){
     echo_log "Updating the index"
     # If the volume has not enough space, the data sub-directory
     # may have not been created, we create them to not break the search
-    mkdir -p "$DOKUWIKI_SAVE_DIR/attic"
-    mkdir -p "$DOKUWIKI_SAVE_DIR/cache"
+    mkdir -p "$DOKUWIKI_ATTIC_DIR"
+    mkdir -p "$DOKUWIKI_CACHE_DIR"
     mkdir -p "$DOKUWIKI_SAVE_DIR/index"
     mkdir -p "$DOKUWIKI_LOCKS_DIR"
     mkdir -p "$DOKUWIKI_SAVE_DIR/log"
-    mkdir -p "$DOKUWIKI_SAVE_DIR/media_meta"
-    mkdir -p "$DOKUWIKI_SAVE_DIR/media_attic"
+    mkdir -p "$DOKUWIKI_MEDIA_META_DIR"
+    mkdir -p "$DOKUWIKI_MEDIA_ATTIC_DIR"
     mkdir -p "$DOKUWIKI_META_DIR"
-    mkdir -p "$DOKUWIKI_SAVE_DIR/tmp"
+    mkdir -p "$DOKUWIKI_TMP_DIR"
 
     php "$DOKUWIKI_HOME"/bin/indexer.php -q
 }
@@ -101,25 +107,90 @@ install_site() {
 
 }
 
+# Clean the meta directory
+# This script will cleanup the meta directory
+# History in this thread: https://forum.dokuwiki.org/d/10570-meta-folder-full-of-spam/10
+function clean_meta(){
+
+
+  case ${1} in
+  page)
+    resourceDir=${DOKUWIKI_PAGES_DIR}
+    metaDir=${DOKUWIKI_META_DIR}
+    ;;
+  media)
+    resourceDir=${DOKUWIKI_MEDIA_DIR}
+    metaDir=${DOKUWIKI_MEDIA_META_DIR}
+    ;;
+  *)
+    echo_err "The meta type parameter ($1) is unknown. It should be page or media"
+    exit 1
+    ;;
+  esac
+
+  echo_log "Meta        : Cleaning the $1 meta directory"
+  # Iterate over each directory in meta
+  find "$metaDir" -type d | while read -r dir; do
+      # Get the relative path from metaDir
+      relative_path="${dir#$metaDir}"
+
+      # Check if the corresponding directory exists in resourceDir
+      if [ ! -d "$resourceDir$relative_path" ]; then
+          # If it doesn't exist, delete the directory in metaDir
+          echo_log "  * Deleting dir: $dir"
+          rm -rf "$dir"
+      fi
+  done
+
+  # Iterate over each file in meta
+  # A corresponding resource file (page or media) should exist
+  # Files extension in meta may be `meta`, `indexed` or `changes`
+  # In the find command line, `-o` means `or`
+  echo_log "Meta        : Cleaning the $1 meta files"
+  find "$metaDir" -type f \( -name "*.meta" -o -name "*.indexed" -o -name "*.changes" \) | while read -r metaFile; do
+
+  	# Get the relative path from metaDir
+    relative_path="${metaFile#$metaDir}"
+
+    # Get away of the ext
+  	relative_path_without_ext="${relative_path%.*}"
+
+  	# Add the txt for a page cleanup
+  	if [ "$1" == "page" ]; then
+  	  relative_page_path="${relative_path_without_ext}.txt"
+  	fi;
+
+    # Check if the corresponding file (page or media) exists
+    if [ ! -f "$resourceDir$relative_page_path" ]; then
+        # If it doesn't exist, delete the file in meta
+        echo_log "  * Deleting meta file: $metaFile"
+        rm -f "$metaFile"
+    fi
+
+  done
+
+}
 
 # Clean function
 # Adapted from: https://www.dokuwiki.org/tips:maintenance
-clean(){
+cleanup(){
 
-  echo_log "Cache       : Delete files that have not been accessed from 10 days"
-  find "$DOKUWIKI_SAVE_DIR"/cache -type f -atime +10 -delete
+  DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS=${DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS:-10}
+  echo_log "Cache       : Delete files that have not been accessed from $DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS days"
+  find "$DOKUWIKI_CACHE_DIR" -type f -atime +"${DOKU_DOCKER_CLEAN_CACHE_RETENTION_DAYS}" -delete
 
-  # echo_log "Deleting feed file from cache"
-  # find "$DOKUWIKI_SAVE_DIR"/cache -type f -name "*.feed" -delete
+  echo_log "Locks       : Remove stale lock files older than 1 day"
+  find "$DOKUWIKI_LOCKS_DIR" -name '*.lock' -type f -mtime +1 -delete
 
-  echo_log "Locks       : Remove stale lock files (older than 1 day)"
-  find "$DOKUWIKI_SAVE_DIR"/locks -name '*.lock' -type f -mtime +1 -delete
-
-  echo_log "Tmp         : Remove files older than 1-2 days"
+  echo_log "Tmp         : Remove files older than 1 day"
   find "$DOKUWIKI_SAVE_DIR"/tmp -type f -mtime +1 -delete
 
-  # Purge files older than ${retention_days} days from attic and media_attic (old revisions)
-  # Find "$DOKU_DOCKER_SAVE_DIR"/{media_,}attic/ -type f -mtime +"${retention_days}" -delete
+  DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS=${DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS:-360}
+  echo_log "Attic Pages : Purge revisions pages older than ${DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS} days"
+  find "$DOKUWIKI_MEDIA_ATTIC_DIR" -type f -mtime +"${DOKU_DOCKER_CLEAN_ATTIC_RETENTION_DAYS}" -delete
+  DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS=${DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS:-90}
+  echo_log "Attic Media : Purge media revisions older than ${DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS} days"
+  find "$DOKUWIKI_ATTIC_DIR" -type f -mtime +"${DOKU_DOCKER_CLEAN_MEDIA_ATTIC_RETENTION_DAYS}" -delete
 
   echo_log "All         : Remove empty directories"
   find "$DOKUWIKI_SAVE_DIR"/{attic,cache,index,locks,media,media_attic,media_meta,meta,pages,tmp}/ \
@@ -139,9 +210,9 @@ clean(){
 
   # Secondary Runtime Data
   COMBO_SECONDARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo-secondary.sqlite3
-  if [ -f $COMBO_SECONDARY_SQLITE ]; then
+  if [ -f "$COMBO_SECONDARY_SQLITE" ]; then
     TABLE_COUNT=$(sqlite3 "$COMBO_SECONDARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
-    if [ $TABLE_COUNT != '0' ]; then
+    if [ "$TABLE_COUNT" != '0' ]; then
       echo_log "$COMBO_LOG_PREFIX: Delete Cache Log Hit older than 5 days"
       echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$COMBO_SECONDARY_SQLITE"
       echo_log "$COMBO_LOG_PREFIX: Delete Redirections Log Hit older than 1 day"
@@ -153,56 +224,12 @@ clean(){
   echo 'VACUUM;' | sqlite3 "$COMBO_SECONDARY_SQLITE"
   echo 'VACUUM;' | sqlite3 "$COMBO_PRIMARY_SQLITE"
 
-}
-
-# Clean the meta directory
-# This script will clean the meta directory
-# History in this thread: https://forum.dokuwiki.org/d/10570-meta-folder-full-of-spam/10
-function clean_meta(){
-
-  pagesDir=${1:-$DOKUWIKI_PAGES_DIR}
-  metaDir=${2:-$DOKUWIKI_META_DIR}
-
-  echo_log "Meta        : Cleaning the meta directory"
-  # Iterate over each directory in meta
-  find "$metaDir" -type d | while read -r dir; do
-      # Get the relative path from metaDir
-      relative_path="${dir#$metaDir}"
-
-      # Check if the corresponding directory exists in pagesDir
-      if [ ! -d "$pagesDir$relative_path" ]; then
-          # If it doesn't exist, delete the directory in metaDir
-          echo_log "  * Deleting dir: $dir"
-          rm -rf "$dir"
-      fi
-  done
-
-  # Iterate over each file in meta
-  # A corresponding page file should exist in pages
-  # Files extension in meta may be `meta`, `indexed` or `changes`
-  # -o means or
-  echo_log "Meta        : Cleaning the meta files"
-  find "$metaDir" -type f \( -name "*.meta" -o -name "*.indexed" -o -name "*.changes" \) | while read -r metaFile; do
-
-  	# Get the relative path from metaDir
-    relative_path="${metaFile#$metaDir}"
-
-    # Get away of the ext
-  	relative_path_without_ext="${relative_path%.*}"
-
-  	# Add txt
-  	relative_page_path="${relative_path_without_ext}.txt"
-
-    # Check if the corresponding page exists in pages
-    if [ ! -f "$pagesDir$relative_page_path" ]; then
-        # If it doesn't exist, delete the file in meta
-        echo_log "  * Deleting file: $metaFile"
-        rm -f "$metaFile"
-    fi
-
-  done
+  # Clean Meta
+  clean_meta page
+  clean_meta media
 
 }
+
 
 # Install Plugins
 # if a plugins.dat file is found
@@ -255,7 +282,7 @@ function print_usage() {
   echo "     * index                  - index the wiki"
   echo "     * install_site   GitUrl  - install a combo site"
   echo "     * install_plugins        - install the plugins of a combo site"
-  echo "     * clean                  - maintenance script to clean the wiki"
+  echo "     * cleanup                  - maintenance script to cleanup the wiki"
   echo "     * help                   - this help"
   echo ""
 
@@ -315,9 +342,8 @@ install_site)
 install_plugins)
   install_plugins
   ;;
-clean)
-  clean
-  clean_meta
+cleanup)
+  cleanup
   ;;
 du)
   dokuwiki_usage

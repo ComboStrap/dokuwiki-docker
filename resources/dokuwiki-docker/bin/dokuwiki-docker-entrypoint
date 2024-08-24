@@ -23,7 +23,7 @@ fi;
 # We recreate the same environment
 ################
 # All environments
-. /etc/profile.d/dokuwiki-docker-env.sh
+. /etc/bash.bashrc
 
 #############################################
 # Script
