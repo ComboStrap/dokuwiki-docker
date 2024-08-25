@@ -12,7 +12,7 @@ if [ "$HOME" == '/' ] && [ "$USER_UID" != '0' ]; then
   # Issue: https://gitlab.com/gitlab-org/gitlab-runner/-/issues/37408
   export HOME=/home/$USER_NAME
   echo "HOME: $HOME"
-  if [ -f $HOME ]; then
+  if [ ! -d $HOME ]; then
       echo "Creating HOME=$HOME"
       mkdir -p "$HOME"
   fi
