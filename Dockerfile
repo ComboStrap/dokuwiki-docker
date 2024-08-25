@@ -55,6 +55,8 @@ COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
 # * If we run the image for script development, we don't need to download it
 ####################################
 ENV DOKUWIKI_VERSION="2024-02-06b"
+# Where Dokuwiki is installed
+ENV DOKUWIKI_HOME='/var/www/html'
 RUN curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" \
     -o /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz \
     && chmod 0777 /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz
@@ -97,7 +99,14 @@ LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 RUN chmod 0777 /run
 ADD resources/conf/supervisor/supervisord.conf /supervisord.conf
 #### Php
+# The below env are used in the dokuwiki-docker.ini and are therefore needed
+# otherwise we get `Warning: PHP Startup: Invalid date.timezone value ''`
+ENV PHP_UPLOAD_MAX_FILESIZE="128M"
+ENV PHP_POST_MAX_SIZE="128M"
+ENV PHP_MEMORY_LIMIT="256M"
+ENV PHP_DATE_TIMEZONE="UTC"
 ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
+
 #### Php-fpm
 # Security Note: Don't expose the Php FPM service to the world
 # Because configuration settings are passed to php-fpm as fastcgi headers,
@@ -129,6 +138,7 @@ RUN mkdir "/opt/dokuwiki-docker"
 COPY resources/dokuwiki-docker /opt/dokuwiki-docker
 RUN chmod 0755 /opt/dokuwiki-docker/bin/*
 ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
+ENV PATH="/opt/dokuwiki-docker/bin:${PATH}"
 
 ####################################
 # Dokuwiki Installer
@@ -136,6 +146,7 @@ ENTRYPOINT ["/opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint"]
 RUN mkdir "/opt/dokuwiki-installer"
 COPY resources/dokuwiki-installer /opt/dokuwiki-installer
 RUN chmod 0755 /opt/dokuwiki-installer/bin/*
+ENV PATH="/opt/dokuwiki-installer/bin:${PATH}"
 
 ####################################
 # Phpctl App Install
@@ -143,6 +154,7 @@ RUN chmod 0755 /opt/dokuwiki-installer/bin/*
 RUN mkdir "/opt/phpctl"
 COPY resources/phpctl /opt/phpctl
 RUN chmod 0755 /opt/phpctl/bin/*
+ENV PATH="/opt/phpctl/bin:${PATH}"
 
 ####################################
 # ComboCtl App Install
@@ -150,3 +162,4 @@ RUN chmod 0755 /opt/phpctl/bin/*
 RUN mkdir "/opt/comboctl"
 COPY resources/comboctl /opt/comboctl
 RUN chmod 0755 /opt/comboctl/bin/*
+ENV PATH="/opt/comboctl/bin:${PATH}"

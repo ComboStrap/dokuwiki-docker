@@ -1,5 +1,3 @@
-# The env set in Dockerfile are only for root
-# With this file we can set the same env for all users
 
 # Note: PS1 and umask are already set in /etc/profile. You should not
 # need this unless you want different defaults for root.
@@ -27,18 +25,5 @@ alias ls='ls $LS_OPTIONS'
 alias ll='ls $LS_OPTIONS -l'
 alias l='ls $LS_OPTIONS -lA'
 
-# Dokuwiki
-# Where Dokuwiki is installed
-export DOKUWIKI_HOME='/var/www/html'
 
-# Php
-export PHP_UPLOAD_MAX_FILESIZE=${PHP_UPLOAD_MAX_FILESIZE:-128M}
-export PHP_POST_MAX_SIZE=${PHP_POST_MAX_SIZE:-$PHP_UPLOAD_MAX_FILESIZE}
-export PHP_MEMORY_LIMIT=${PHP_UPLOAD_LIMIT:-256M}
-export PHP_DATE_TIMEZONE=${PHP_DATE_TIMEZONE:-UTC}
 
-# Add all script in the path
-export PATH="/opt/dokuwiki-docker/bin:${PATH}"
-export PATH="/opt/dokuwiki-installer/bin:${PATH}"
-export PATH="/opt/phpctl/bin:${PATH}"
-export PATH="/opt/comboctl/bin:${PATH}"
