@@ -1,8 +1,10 @@
 #!/bin/bash
 
 # Functions
-SCRIPT_DIR="$(dirname "$0")"
-source "$SCRIPT_DIR/dd"
+dd_echo(){
+  echo "DokuWiki Docker: $1"
+}
+
 
 if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # flag
