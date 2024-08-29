@@ -265,13 +265,17 @@ If you want to get access, you need to [set the admin user](#set-an-admin-user)
 
 ### Run as the host user
 
-By default, the container will run as `root` but if you develop, 
-you may want to change the user to the host user
+By default, the container will run as `root` but 
+if you [mount a volume](#mount-a-volume) from your desktop, 
+you may want to change the user to the host user 
+to not get any permission issues.
 
 You do it by setting the `user` option.
 
 ```bash
-# check your ids (uid:gid should be 1000:1000)
+# check your ids (uid:gid)
+# By default, the first user is 1000:1000
+# and was created with the name `me`
 id
 # then use them
 docker run \

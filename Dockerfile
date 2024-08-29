@@ -91,11 +91,19 @@ LABEL org.opencontainers.image.source="https://github.com/combostrap/dokuwiki-do
 LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 
 ####################################
-# Configuration files
+# Configuration
 ####################################
+# Create a host user `1000` called `me` for convenience when using WSL
+# ie the UID 1000 is assigned to first non-root user
+# Why? The user id created on Linux systems starts from 1000
+# It permits to mount ssh keys and other asset in the home directory
+RUN addgroup --gid 1000 megroup && \
+    adduser --uid 1000 --gid 1000 --shell /bin/bash me
+
+
 # Configuration file are at the end to not build again
 #### Supervisor
-# All users can write in /run becayse supervisor will write socket/file in it
+# All users can write in /run because supervisor will write socket/file in it
 RUN chmod 0777 /run
 ADD resources/conf/supervisor/supervisord.conf /supervisord.conf
 #### Php

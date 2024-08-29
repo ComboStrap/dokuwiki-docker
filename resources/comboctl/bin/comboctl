@@ -54,6 +54,9 @@ DOKUWIKI_MEDIA_ATTIC_DIR="$DOKUWIKI_SAVE_DIR/media_attic"
 DOKUWIKI_MEDIA_META_DIR="$DOKUWIKI_SAVE_DIR/media_meta"
 DOKUWIKI_TMP_DIR="$DOKUWIKI_SAVE_DIR/tmp"
 
+COMBO_SQLITE_RUNTIME="$DOKUWIKI_SAVE_DIR"/meta/combo-secondary.sqlite3
+COMBO_SQLITE_PRIMARY="$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
+
 ######################################
 # Command
 ######################################
@@ -72,7 +75,9 @@ function update_index(){
     mkdir -p "$DOKUWIKI_META_DIR"
     mkdir -p "$DOKUWIKI_TMP_DIR"
 
+    # -q for quiet
     php "$DOKUWIKI_HOME"/bin/indexer.php -q
+
 }
 
 # The first parameter is the git URI
@@ -199,30 +204,28 @@ cleanup(){
 
   COMBO_LOG_PREFIX="Combo Sqlite"
   # Primary Meta Table
-  COMBO_PRIMARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
-  if [ -f "$COMBO_PRIMARY_SQLITE" ]; then
-    TABLE_COUNT=$(sqlite3 "$COMBO_PRIMARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
+  if [ -f "$COMBO_SQLITE_PRIMARY" ]; then
+    TABLE_COUNT=$(sqlite3 "$COMBO_SQLITE_PRIMARY" "SELECT count(*) FROM sqlite_master WHERE type='table';")
     if [ "$TABLE_COUNT" != '0' ]; then
       # Old table
-      echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 "$COMBO_PRIMARY_SQLITE"
+      echo "DELETE FROM REDIRECTIONS_LOG" | sqlite3 "$COMBO_SQLITE_PRIMARY"
     fi;
   fi;
 
   # Secondary Runtime Data
-  COMBO_SECONDARY_SQLITE="$DOKUWIKI_SAVE_DIR"/meta/combo-secondary.sqlite3
-  if [ -f "$COMBO_SECONDARY_SQLITE" ]; then
-    TABLE_COUNT=$(sqlite3 "$COMBO_SECONDARY_SQLITE" "SELECT count(*) FROM sqlite_master WHERE type='table';")
+  if [ -f "$COMBO_SQLITE_RUNTIME" ]; then
+    TABLE_COUNT=$(sqlite3 "$COMBO_SQLITE_RUNTIME" "SELECT count(*) FROM sqlite_master WHERE type='table';")
     if [ "$TABLE_COUNT" != '0' ]; then
       echo_log "$COMBO_LOG_PREFIX: Delete Cache Log Hit older than 5 days"
-      echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$COMBO_SECONDARY_SQLITE"
+      echo "DELETE FROM CACHE_LOG WHERE datetime('now', '-5 days') > timestamp;" | sqlite3 "$COMBO_SQLITE_RUNTIME"
       echo_log "$COMBO_LOG_PREFIX: Delete Redirections Log Hit older than 1 day"
-      echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 "$COMBO_SECONDARY_SQLITE"
+      echo "DELETE FROM REDIRECTIONS_LOG WHERE datetime('now', '-1 days') > timestamp;" | sqlite3 "$COMBO_SQLITE_RUNTIME"
     fi
   fi
 
   echo_log "$COMBO_LOG_PREFIX: Vacuum (Get space back, shrink the db file)"
-  echo 'VACUUM;' | sqlite3 "$COMBO_SECONDARY_SQLITE"
-  echo 'VACUUM;' | sqlite3 "$COMBO_PRIMARY_SQLITE"
+  echo 'VACUUM;' | sqlite3 "$COMBO_SQLITE_RUNTIME"
+  echo 'VACUUM;' | sqlite3 "$COMBO_SQLITE_PRIMARY"
 
   # Clean Meta
   clean_meta page
@@ -266,8 +269,53 @@ install_plugins(){
     fi
 }
 
+# Example for a big wiki
+# 53M     ./pages
+# 285M    ./media
+# 2.2G    ./meta
+# 5.4M    ./media_meta
+# 821M    ./attic
+# 15M     ./index
+# 1004K   ./locks
+# 26M     ./media_attic
+# 960K    ./tmp
+# 33G     ./cache
+# 1.5M    ./log
+# 36G     .
+
 function dokuwiki_usage(){
-    du -sh  "$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
+
+    echo_log "Databases Size:"
+
+    if [ -f "$COMBO_SQLITE_PRIMARY" ]; then
+      echo_log "  * Primary Database: $(du -sh  "$COMBO_SQLITE_PRIMARY")"
+    else
+      echo_log "  * No primary database found"
+    fi
+
+    if [ -f "$COMBO_SQLITE_RUNTIME" ]; then
+      echo_log "  * Runtime Database: $(du -sh  "$COMBO_SQLITE_RUNTIME")"
+    else
+      echo_log "  * No runtime database found"
+    fi
+
+    echo_log
+    echo_log "File System Size:"
+    echo_log "Total DokuWiki Size: $(du -sh "$DOKUWIKI_HOME")"
+    echo_log "Total Data Size: $(du -sh "$DOKU_DOCKER_SAVE_DIR")"
+    echo_log "Total Data SubDirectories Sizes: "
+    du -h --max-depth=1 "$DOKU_DOCKER_SAVE_DIR" | while IFS= read -r line; do
+        echo_log "  * $line"
+    done
+
+
+
+
+
+    # Top 20 files
+    # find "$DOKU_DOCKER_SAVE_DIR" -type f -exec du -h {} + | sort -rh | head -n 20
+    # find . -type f -exec du -h {} + | sort -rh | head -n 20
+
 }
 
 function print_usage() {
@@ -282,7 +330,7 @@ function print_usage() {
   echo "     * index                  - index the wiki"
   echo "     * install_site   GitUrl  - install a combo site"
   echo "     * install_plugins        - install the plugins of a combo site"
-  echo "     * cleanup                  - maintenance script to cleanup the wiki"
+  echo "     * cleanup                - maintenance script to cleanup the wiki"
   echo "     * help                   - this help"
   echo ""
 
