@@ -5,7 +5,7 @@
 # umask 022
 USER_UID=$(id -u)
 USER_NAME=$(whoami 2> /dev/null || echo 'noname')
-echo "User: $USER_NAME, UID: $USER_UID, GID: $(id -g)"
+echo "bash.bashrc: User: $USER_NAME, UID: $USER_UID, GID: $(id -g)"
 if [ "$HOME" == '/' ] && [ "$USER_UID" != '0' ]; then
   # to avoid error with the HOME directory
   # such as `error: could not lock config file //.gitconfig: Permission denied`

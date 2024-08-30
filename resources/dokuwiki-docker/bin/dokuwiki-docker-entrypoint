@@ -65,10 +65,10 @@ done
 
 DOKU_DOCKER_ENV=${DOKU_DOCKER_ENV:-prod}
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
-  dd_echo "Production Mode"
+  dd_echo "Php Production Mode"
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 else
-  dd_echo "Development Mode"
+  dd_echo "Php Development Mode"
   mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 fi
 
@@ -83,9 +83,8 @@ export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
 #############
 # https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
-# The path to the dokuwiki data
-export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
 
+dd_echo "DokuWiki Availability check (Home: $DOKUWIKI_HOME)"
 if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
 
     # Install is done by downloading
@@ -117,23 +116,37 @@ if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
         rm "$DOKUWIKI_ARCHIVE_PATH"
     fi;
 
-    # If a user want to have `data` as namespace. ie https://dokuwiki.com/data/mypage
-    # it needs to set the `savedir` (https://www.dokuwiki.org/config:savedir) to another value than data
-    # otherwise it's refused by the web server (ie Caddyfile)
-    # as the whole dokuwiki data directory is forbidden
-    if [[ "$DOKU_DOCKER_SAVE_DIR" != "data" ]]; then
-      dd_echo "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
-      mv data/* "$DOKU_DOCKER_SAVE_DIR/"
-      # rf because media and pages directory will not move
-      rm -rf data
-    fi
-
     dd_echo "Backup the installed Inter wiki images"
     # Move the default Inter wiki images to not get them in Git
     INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
     mkdir -p $INTER_WIKI_BACKUP_DIR
     mv lib/images/interwiki/* $INTER_WIKI_BACKUP_DIR
 
+else
+
+  dd_echo "Dokuwiki found, no installation"
+
+fi
+
+#############################################
+# Dokuwiki Save Dir
+#############################################
+# If a user want to have `data` as namespace. ie https://dokuwiki.com/data/mypage
+# it needs to set the `savedir` (https://www.dokuwiki.org/config:savedir) to another value than data
+# otherwise it's refused by the web server (ie Caddyfile)
+# as the whole dokuwiki data directory is forbidden
+# We make it idempotent (not coupled to the installation)
+# because the installation may break
+# The path to the dokuwiki data
+export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
+export DOKUWIKI_SAVE_DIR="$DOKUWIKI_HOME/${DOKU_DOCKER_SAVE_DIR:-data}"
+if [[ "$DOKU_DOCKER_SAVE_DIR" != "data" ]] && [[ ! -d "$DOKUWIKI_SAVE_DIR" ]] && [[ -d "$DOKUWIKI_HOME/data" ]]; then
+  dd_echo "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
+  mv "$DOKUWIKI_HOME"/data/* "$DOKUWIKI_HOME/$DOKU_DOCKER_SAVE_DIR/"
+  # rf because media and pages directory will not move
+  rm -rf "$DOKUWIKI_HOME"/data
+else
+  dd_echo "Data directory set to ($DOKUWIKI_SAVE_DIR)"
 fi
 
 #############################################
@@ -141,7 +154,7 @@ fi
 #############################################
 DOKUWIKI_PATCH_DIR="$DOKU_DOCKER_HOME/meta/dokuwiki-patches/${DOKUWIKI_VERSION}"
 if [[ -d "$DOKUWIKI_PATCH_DIR" ]]; then
-  dd_echo "Copying Dokuwiki Patch for version ${DOKUWIKI_VERSION}"
+  dd_echo "Dokuwiki Patch: Copying Patch for version ${DOKUWIKI_VERSION}"
   cp -r -f "$DOKUWIKI_PATCH_DIR"/* "$DOKUWIKI_HOME"
 fi
 
