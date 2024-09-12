@@ -275,7 +275,7 @@ PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
 PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
 ```
 
-For instance for the `max.children` number of threads for the image pool, you would need to set the `PHP_FPM_PM_IMAGE_MAX_CHILDREN` environment.
+For instance for the `max.children` number of threads for the default pool, you would need to set the `PHP_FPM_PM_MAX_CHILDREN` environment.
 
 To change it from `3` to `4`
 ```bash
@@ -313,6 +313,18 @@ You can count:
   * 35MB for the master php-fpm thread
   * 60MB for the Caddy web server
   * 30MB for the process controller (supervisor)
+
+### Test a load
+
+You can test your website by download it with `wget`
+
+Example:
+```bash
+WEBSITE_URL=https://combostrap.com # replace with your URL
+wget --recursive --level=inf --no-parent --timestamping --quiet --show-progress --output-file=wget-log.txt "$WEBSITE_URL"
+```
+
+If you start this command `4` times, you would fake `4` bots, crawling your website.
 
 
 ### Get Php Info Endpoint
