@@ -262,18 +262,58 @@ Php-Fpm runs 2 pools of threads:
 * one for images
 * one for all other requests
 
-You can configure them with environment variables.
+The pool configuration will result in a low or high memory usage. 
+See the [dedicated section](#calculate-the-memory-capacity-sizing)
 
-For instance for the `max.children` number of threads for image, you would need to set the `PHP_FPM_PM_IMAGE_MAX_CHILDREN` environment.
-
-To change it from `2` to `5`
+You can configure them with the following environment variables.
 ```bash
-docker run -e PHP_FPM_PM_IMAGE_MAX_CHILDREN=5 ....
+# Default Pool
+PHP_FPM_PM_MAX_SPARE_SERVERS=2 # the number of thread in idle
+PHP_FPM_PM_MAX_CHILDREN=3 # the maximum number of threads
+# Image Pool
+PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
+PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
 ```
 
-All actual possibles environment variables can be seen in the corresponding file:
+For instance for the `max.children` number of threads for the image pool, you would need to set the `PHP_FPM_PM_IMAGE_MAX_CHILDREN` environment.
+
+To change it from `3` to `4`
+```bash
+docker run -e PHP_FPM_PM_MAX_CHILDREN=4 ....
+```
+
+The environment variables are used in their corresponding file:
 * [default pool](resources/conf/php-fpm/www.conf)
 * [image pool](resources/conf/php-fpm/image.conf)
+
+
+### Calculate the Memory Capacity Sizing
+
+
+Below is an example of a `234Mb` container after a load of 4 bots downloading the whole Combostrap website 
+with the default sizing:
+* 3 [default threads](#configure-php-fpm-pool)
+* 1 [image thread](#configure-php-fpm-pool)
+```
+32 MB php-fpm: master process
+66 MB php-fpm: pool www
+48 MB php-fpm: pool www
+58 MB php-fpm: pool www
+10 MB php-fpm: pool image
+54 MB caddy run -c
+30 MB /usr/bin/python3 /usr/bin/supervisord -c
+```
+
+You can configure the [maximum number of php-fpm children threads](#configure-php-fpm-pool)
+to manage the maximum memory size.
+
+You can count:
+  * 60MB by [default php-fpm pool thread](#configure-php-fpm-pool)
+  * 10MB by [image php-fpm pool thread](#configure-php-fpm-pool)
+  * 35MB for the master php-fpm thread
+  * 60MB for the Caddy web server
+  * 30MB for the process controller (supervisor)
+
 
 ### Get Php Info Endpoint
 
