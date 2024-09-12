@@ -276,9 +276,16 @@ function control() {
     output=$(top -b -n 1 | grep "php-fpm" | awk '{print $1,$9,$10}')
     OLD_IFS=$IFS
     IFS=$'\n'
-    mainPid=$(systemctl show -p MainPID php-fpm | awk -F= '{print $2}')
-
-    phpStatusResponse=$(curl -s -w "\n%{http_code}" 'http://localhost/php-status?full&json')
+    if [ -x "$(command -v systemctl)" ]; then
+      mainPid=$(systemctl show -p MainPID php-fpm | awk -F= '{print $2}')
+    elif [ -x "$(command -v pgrep)" ]; then
+      mainPid=$(pgrep -f 'php-fpm: mast*' | awk '{ if(NR<=1) print $2 }')
+    else
+      echo_err "No systemctl, no pgrep: unable to get the master pid"
+      exit 1
+    fi
+    PHP_FPM_ENDPOINT_PATH=/php-fpm/status
+    phpStatusResponse=$(curl -s -w "\n%{http_code}" "http://localhost$PHP_FPM_ENDPOINT_PATH?full&json")
     phpHttpStatus=${phpStatusResponse: -3} # the space is important
     if [ "$phpHttpStatus" != '200' ]; then
       echo_err "Php Status returned a bad response: $phpHttpStatus"
@@ -290,7 +297,7 @@ function control() {
       phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
       IFS=" " read -r state requestUri <<<"$phpStatus"
       if [ "$pid" != "$mainPid" ]; then
-        if [[ "$state" == "Running" ]] && [[ ! "$requestUri" =~ '/php-status' ]]; then
+        if [[ "$state" == "Running" ]] && [[ ! "$requestUri" =~ $PHP_FPM_ENDPOINT_PATH ]]; then
           extraSubject="$pid (Origin: stat, Cpu: $cpu, Mem: $mem)"
           if [ $service == false ]; then
             printf "%-8s %-4s %-4s %s\n" "$pid" "$cpu" "$mem" "$requestUri"
@@ -396,13 +403,16 @@ COMMAND=""
 # Parsing
 for arg in "$@"; do
   case "$arg" in
+  --help|-h)
+    help
+    exit
+    ;;
   --*)
     OPTIONS+=("$arg")
-    shift
     ;;
   *)
     # Command
-    if [ -z "$COMMAND" ]; then
+    if [ "$COMMAND" == "" ]; then
         COMMAND=$1
         echo "Command ($COMMAND) found"
       else
@@ -415,7 +425,7 @@ for arg in "$@"; do
 done
 
 
-if [ -z "$COMMAND" ]; then
+if [ "$COMMAND" == "" ]; then
   echo 'No command was given, list chosen.'
   COMMAND='ls'
 fi
