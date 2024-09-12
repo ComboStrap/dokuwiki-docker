@@ -45,6 +45,9 @@ You got out of the box:
 * Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
 * [Proxy Ready](#is-the-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
 * [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
+* Out-of-memory image error processing prevention thanks to a dedicated [Php-Fpm pool](resources/conf/php-fpm/image.conf)
+  * Why? Because DokuWiki loads the image in memory, too much requests (from users/bots) at the same time processing image will result in an out-of-memory error
+
 
 ## How to
 
@@ -253,6 +256,25 @@ docker run -e PHP_DATE_TIMEZONE=UTC ....
 
 All actual possibles configurations can be seen in the [php dokuwiki-docker.ini files](resources/conf/php/dokuwiki-docker.ini)
 
+### Configure Php-Fpm Pool
+
+Php-Fpm runs 2 pools of threads:
+* one for images
+* one for all other requests
+
+You can configure them with environment variables.
+
+For instance for the `max.children` number of threads for image, you would need to set the `PHP_FPM_PM_IMAGE_MAX_CHILDREN` environment.
+
+To change it from `2` to `5`
+```bash
+docker run -e PHP_FPM_PM_IMAGE_MAX_CHILDREN=5 ....
+```
+
+All actual possibles environment variables can be seen in the corresponding file:
+* [default pool](resources/conf/php-fpm/www.conf)
+* [image pool](resources/conf/php-fpm/image.conf)
+
 ### Get Php Info Endpoint
 
 To see the actual configuration, you can hit the endpoint: 
@@ -379,7 +401,14 @@ docker run \
   ...
 ```
 
-Performance:
+You can then update it with the `comboctl` tool.
+
+Example with the [starter site](#example-starter-web-site)
+```bash
+docker exec -ti combo-site-starter comboctl index
+```
+
+Note on Performance:
 * In case of rollout, this extra processing should not impact the availability of your container if you set the [readiness probes](#get-healthcheck--liveness--probes--container-state)
 * If the rollout takes too long, you need to set up a [volume](#mount-a-volume) so that the index is only updated and not created from scratch.
 
@@ -462,11 +491,40 @@ See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwik
 
 ### How to install and configure a large wiki
 
-With a large wiki, you should [mount a volume](#mount-a-volume) to speed up:
-* the download of store your data
-* the update of the search index
+A large wiki is a wiki with a thousand of pages and media.
 
-If the search index takes too long, you can [disable it](#how-to-disable-the-automatic-update-of-the-search-index)
+You will recognize them when the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
+takes a long time to refresh (more than one minute).
+
+Example of a `4.9G` dokuwiki data directory. 
+As you can see the `cache` directory is 12 times bigger than the raw data (ie `pages` and `media`)
+```
+3.5G    ./cache
+285M    ./media
+184M    ./meta
+821M    ./attic
+53M     ./pages
+26M     ./media_attic
+15M     ./index
+5.4M    ./media_meta
+1.5M    ./log
+68K     ./locks
+960K    ./tmp
+```
+
+With a large wiki, you should:
+* [mount a volume](#mount-a-volume):
+  * to speed up the download of your site
+  * to keep the search index between restart
+* [disable search index update](#how-to-disable-the-automatic-update-of-the-search-index)/
+
+Example:
+```bash
+docker run \
+  -e DOKU_DOCKER_SEARCH_INDEX='off' \
+  -v $PWD:/var/www/html \
+  ...
+```
 
 If your data lives in Git, you should consider using [git-lfs](https://git-lfs.com/) to reduce the size of the volume.
 Why ? Because otherwise you get your media (images, ...), not once but twice:

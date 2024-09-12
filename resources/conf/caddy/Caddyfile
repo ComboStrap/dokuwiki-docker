@@ -2,119 +2,137 @@
 
 # public
 :80 {
+	# Root of the server (added to all relative path)
+	# https://caddyserver.com/docs/caddyfile/directives/root
+	root * /var/www/html
 
-    # Root of the server (added to all relative path)
-    # https://caddyserver.com/docs/caddyfile/directives/root
-    root * /var/www/html
+	# Response encoding
+	encode gzip zstd
 
-    # Response encoding
-    encode gzip zstd
+	# serves static files
+	file_server
 
-    # serves static files
-    file_server
+	#############################
+	# Handle dokuwiki request (forbidden and rewrite)
+	#############################
+	# The route block wrap the directives to ensure that they are executed in order
+	# https://caddyserver.com/docs/caddyfile/directives/route
+	route {
+		# We secure the phpinfo script because
+		# you can see the environment variables
+		# that have secrets and other wild info
+		@phpinfo {
+			path /dokuwiki-docker/phpinfo.php
+		}
+		# 'basicauth' directive is deprecated, please use 'basic_auth' instead
+		basic_auth @phpinfo {
+			{$DOKU_DOCKER_ADMIN_NAME} {$DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH}
+		}
 
-    #############################
-    # Handle dokuwiki request (forbidden and rewrite)
-    #############################
-    # The route block wrap the directives to ensure that they are executed in order
-    # https://caddyserver.com/docs/caddyfile/directives/route
-    route {
+		# Forbidden Path
+		# data is an env to be able to use data as namespace DOKU_DOCKER_SAVE_DIR
+		@forbidden {
+			path /{$DOKU_DOCKER_SAVE_DIR}/* /conf/* /bin/* /inc/*
+		}
+		handle @forbidden {
+			respond * 403
+		}
 
-        # We secure the phpinfo script because
-        # you can see the environment variables
-        # that have secrets and other wild info
-        @phpinfo {
-            path /dokuwiki-docker/phpinfo.php
-        }
-        # 'basicauth' directive is deprecated, please use 'basic_auth' instead
-        basic_auth @phpinfo {
-            {$DOKU_DOCKER_ADMIN_NAME} {$DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH}
-        }
+		# Rewrite
+		# https://www.dokuwiki.org/rewrite
+		handle_path /_media/* {
+			rewrite * /lib/exe/fetch.php?media={path}&{query}
+		}
+		handle_path /_detail/* {
+			rewrite * /lib/exe/detail.php?media={path}&{query}
+		}
+		handle /_export/* {
+			@export path_regexp export ^/_export/([^/]+)/(.*)
+			rewrite @export /doku.php?do=export_{re.export.1}&{query}&id={re.export.2}
+		}
 
-        # Forbidden Path
-        # data is an env to be able to use data as namespace DOKU_DOCKER_SAVE_DIR
-        @forbidden {
-            path /{$DOKU_DOCKER_SAVE_DIR}/* /conf/* /bin/* /inc/*
-        }
-        handle @forbidden {
-            respond * 403
-        }
+		# Rewrite to doku.php
+		handle / {
+			rewrite * /doku.php?{query}
+		}
 
-        # Rewrite
-        # https://www.dokuwiki.org/rewrite
-        handle_path /_media/* {
-            rewrite * /lib/exe/fetch.php?media={path}&{query}
-        }
-        handle_path /_detail/* {
-            rewrite * /lib/exe/detail.php?media={path}&{query}
-        }
-        handle /_export/* {
-            @export path_regexp export ^/_export/([^/]+)/(.*)
-            rewrite @export /doku.php?do=export_{re.export.1}&{query}&id={re.export.2}
-        }
+		# If the request does not match any file at path,
+		# rewrite to the doku.php entrypoint
+		# Match php-fpm requests
+		# match requests WITH NEITHER where
+		# - a file that does not exists
+		# - or a path that does not start with php-fpm
+		# https://caddyserver.com/docs/caddyfile/matchers#not
+		@default-rewrite {
+			not file
+			not path /php-fpm/*
+		}
+		rewrite @default-rewrite /doku.php?id={path}&{query}
+	}
 
-        # Rewrite to doku.php
-        handle / {
-            rewrite * /doku.php?{query}
-        }
+	####################
+	# Handle php-fpm ping and status
+	####################
+	route {
+		# Localhost only
+		@localhost {
+			remote_ip 127.0.0.1 ::1
+		}
+		handle @localhost {
+			# php-fpm status available only locally
+			# env are passed to php
+			# see https://www.php.net/manual/en/reserved.variables.server.php
+			# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+			# and we don't get a not found
+			reverse_proxy /php-fpm/status 127.0.0.1:9000 {
+				transport fastcgi {
+					env SCRIPT_NAME {path}
+				}
+			}
+			reverse_proxy /php-fpm/image/status 127.0.0.1:9001 {
+				transport fastcgi {
+					env SCRIPT_NAME {path}
+				}
+			}
+		}
 
-        # If the request does not match any file at path,
-        # rewrite to the doku.php entrypoint
-        # Match php-fpm requests
-        # match requests WITH NEITHER where
-        # - a file that does not exists
-        # - or a path that does not start with php-fpm
-        # https://caddyserver.com/docs/caddyfile/matchers#not
-        @default-rewrite {
-           not file
-           not path /php-fpm/*
-        }
-        rewrite @default-rewrite /doku.php?id={path}&{query}
+		# php-fpm ping - available publicly
+		# env are passed to php
+		# see https://www.php.net/manual/en/reserved.variables.server.php
+		# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+		reverse_proxy /php-fpm/ping 127.0.0.1:9000 {
+			transport fastcgi {
+				env SCRIPT_NAME {path}
+			}
+		}
+		reverse_proxy /php-fpm/image/ping 127.0.0.1:9001 {
+			transport fastcgi {
+				env SCRIPT_NAME {path}
+			}
+		}
+	}
 
-    }
+	# Handle Image Processing
+	# @image is a named matcher:
+	# https://caddyserver.com/docs/caddyfile/matchers#named-matchers
+	# Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
+	@image expression {query.media}.matches(".*(jpg|jpeg|png|gif|bmp|tif|tiff|webp)$")
+	handle @image {
+		php_fastcgi 127.0.0.1:9001 {
+			# Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+			# From private ranges proxy (Used in Kubernetes/docker case)
+			trusted_proxies private_ranges
+		}
+	}
 
-    ####################
-    # Handle php-fpm ping and status
-    ####################
-    route {
-
-        # Localhost only
-        @localhost {
-            remote_ip 127.0.0.1 ::1
-        }
-        handle @localhost {
-          # php-fpm status available only locally
-          # env are passed to php
-          # see https://www.php.net/manual/en/reserved.variables.server.php
-          # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-          # and we don't get a not found
-          reverse_proxy /php-fpm/status 127.0.0.1:9000 {
-              transport fastcgi {
-                  env SCRIPT_NAME {path}
-              }
-          }
-        }
-
-        # php-fpm ping - available publicly
-        # env are passed to php
-        # see https://www.php.net/manual/en/reserved.variables.server.php
-        # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-        reverse_proxy /php-fpm/ping 127.0.0.1:9000 {
-              transport fastcgi {
-                  env SCRIPT_NAME {path}
-              }
-        }
-    }
-
-    ###############
-    # Default
-    ###############
-    # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
-    # handles PHP files using FastCGI
-    php_fastcgi 127.0.0.1:9000 {
-        # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-        # From private ranges proxy (Used in Kubernetes/docker case)
-        trusted_proxies private_ranges
-    }
-
+	###############
+	# Default
+	###############
+	# https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
+	# handles PHP files using FastCGI
+	php_fastcgi 127.0.0.1:9000 {
+		# Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+		# From private ranges proxy (Used in Kubernetes/docker case)
+		trusted_proxies private_ranges
+	}
 }

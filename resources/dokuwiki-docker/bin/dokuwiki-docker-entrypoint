@@ -74,11 +74,6 @@ fi
 
 
 #############
-# Php Fpm Conf
-#############
-export PHP_FPM_PM_START_SERVERS=${PHP_FPM_PM_START_SERVERS:-2}
-
-#############
 # Dokuwiki Install
 #############
 # https://www.dokuwiki.org/install
@@ -140,13 +135,10 @@ fi
 # The path to the dokuwiki data
 export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
 export DOKUWIKI_SAVE_DIR="$DOKUWIKI_HOME/${DOKU_DOCKER_SAVE_DIR:-data}"
+dd_echo "Dokuwiki Data directory: ($DOKUWIKI_SAVE_DIR)"
 if [[ "$DOKU_DOCKER_SAVE_DIR" != "data" ]] && [[ ! -d "$DOKUWIKI_SAVE_DIR" ]] && [[ -d "$DOKUWIKI_HOME/data" ]]; then
   dd_echo "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
-  mv "$DOKUWIKI_HOME"/data/* "$DOKUWIKI_HOME/$DOKU_DOCKER_SAVE_DIR/"
-  # rf because media and pages directory will not move
-  rm -rf "$DOKUWIKI_HOME"/data
-else
-  dd_echo "Data directory set to ($DOKUWIKI_SAVE_DIR)"
+  mv "$DOKUWIKI_HOME"/data "$DOKUWIKI_SAVE_DIR"
 fi
 
 #############################################
@@ -199,7 +191,7 @@ if [[ ! -d "$DOKUWIKI_HOME/.git" ]] && [ "$ROOT_PAGES_COUNT" == "0" ]; then
 else
   dd_echo "No combo website installation because:"
   if [ "$ROOT_PAGES_COUNT" != "0" ]; then
-    dd_echo "  * Website installed detected with $ROOT_PAGES_COUNT pages at the root"
+    dd_echo "  * Website detected with $ROOT_PAGES_COUNT pages at the root"
   else
     dd_echo "  * Git was detected"
   fi;
@@ -211,6 +203,8 @@ fi
 # We install plugin not with a Site installation
 # because if the dev develops, it may change just the plugins file
 ################
+dd_echo ""
+dd_echo "Plugins installation:"
 comboctl install_plugins
 
 ################

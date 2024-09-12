@@ -6,6 +6,7 @@
 # Dockerfile is at: https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/Dockerfile
 FROM php:8.3-fpm-bookworm
 
+
 ####################################
 # Package Installation
 ####################################
@@ -100,6 +101,9 @@ LABEL org.opencontainers.image.description="Dokuwiki in Docker"
 RUN addgroup --gid 1000 megroup && \
     adduser --uid 1000 --gid 1000 --shell /bin/bash me
 
+#### Env
+# Where the config are found (Used by caddy: https://caddyserver.com/docs/conventions#configuration-directory)
+ENV XDG_CONFIG_HOME=/etc
 
 # Configuration file are at the end to not build again
 #### Supervisor
@@ -123,7 +127,17 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
 ADD --chmod=0644 resources/conf/php-fpm/php-fpm.conf /usr/local/etc/
+# Default Pool
+ENV PHP_FPM_PM_START_SERVERS=2
+ENV PHP_FPM_PM_MAX_CHILDREN=5
+ENV PHP_FPM_PM_MAX_SPARE_SERVERS=3
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
+# Image Pool
+ENV PHP_FPM_PM_IMAGE_START_SERVERS=1
+ENV PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
+ENV PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
+ADD --chmod=0644 resources/conf/php-fpm/image.conf /usr/local/etc/php-fpm.d/
+
 ## See also
 ## /usr/local/etc/php-fpm.d/docker.conf
 ## /usr/local/etc/php-fpm.d/zz-docker.conf
@@ -131,7 +145,8 @@ RUN chmod 0777 /var/log # Gives permission to the running user to create log
 RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to create php ini file
 #### Caddy
 EXPOSE 80
-COPY resources/conf/caddy/Caddyfile /Caddyfile
+RUN mkdir $XDG_CONFIG_HOME/caddy && chmod 0777 $XDG_CONFIG_HOME/caddy # Gives permission to the running user to create files in it
+COPY resources/conf/caddy/Caddyfile $XDG_CONFIG_HOME/caddy/Caddyfile
 #### Bash (to get the same env with `docker exec bash -l`)
 # When bash initializes a non-login interactive bash shell on a Debian/Ubuntu-like system,
 # the shell first reads /etc/bash.bashrc and then reads ~/.bashrc.
