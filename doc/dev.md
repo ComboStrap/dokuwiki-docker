@@ -32,7 +32,7 @@ chmod +755 resources/dokuctl/bin/*
 docker run \
   --name dd \
   --rm \
-  -p 8081:80 \
+  -p 8085:80 \
   --user 1000:1000 \
   -e DOKU_DOCKER_STRICT=true \
   -e DOKU_DOCKER_ENV=dev \
@@ -48,8 +48,14 @@ docker run \
   -v $PWD/resources/conf/caddy/Caddyfile:/etc/caddy/Caddyfile \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
-* All scripts run with the above command are from your desktop.
-* Change them, re-run.
+* Then connect with bash
+```bash
+docker exec -ti dd bash
+```
+* Change 
+  * the scripts and rerun them
+  * the configuration and reload them
+
 
 ### Caddy
 

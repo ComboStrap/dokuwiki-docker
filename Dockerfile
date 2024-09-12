@@ -13,10 +13,11 @@ FROM php:8.3-fpm-bookworm
 
 # Update is needed to locate packages
 # Otherwise we get `Unable to locate package xxx`
-RUN apt-get update && apt-get install -y \
-    unzip \
-    wget \
-    git \
+RUN apt-get update  \
+    # phpctl dependencies (Top and Jq)
+    && apt-get install -y procps jq \
+    # Utility
+    && apt-get install -y unzip wget git \
     # bsdtar to unzip without the first directory \
     # https://www.libarchive.org/
     # https://packages.debian.org/unstable/libarchive-tools
@@ -27,6 +28,7 @@ RUN apt-get update && apt-get install -y \
     && apt-get install -y libfcgi \
     # SQlite 3 Cli (pdo_sqlite uses a library, not the cli)
     && apt-get install -y sqlite3
+
 
 ####################################
 # Php Extensions Installation
@@ -128,14 +130,12 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
 ADD --chmod=0644 resources/conf/php-fpm/php-fpm.conf /usr/local/etc/
 # Default Pool
-ENV PHP_FPM_PM_START_SERVERS=2
-ENV PHP_FPM_PM_MAX_CHILDREN=5
-ENV PHP_FPM_PM_MAX_SPARE_SERVERS=3
+ENV PHP_FPM_PM_MAX_SPARE_SERVERS=2
+ENV PHP_FPM_PM_MAX_CHILDREN=3
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
 # Image Pool
-ENV PHP_FPM_PM_IMAGE_START_SERVERS=1
-ENV PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
 ENV PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
+ENV PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
 ADD --chmod=0644 resources/conf/php-fpm/image.conf /usr/local/etc/php-fpm.d/
 
 ## See also

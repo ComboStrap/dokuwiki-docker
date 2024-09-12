@@ -45,7 +45,7 @@ You got out of the box:
 * Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
 * [Proxy Ready](#is-the-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
 * [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
-* Out-of-memory image error processing prevention thanks to a dedicated [Php-Fpm pool](resources/conf/php-fpm/image.conf)
+* [Dedicated Image Processing Pool](resources/conf/php-fpm/image.conf) to avoid an Out-of-Memory error 
   * Why? Because DokuWiki loads the image in memory, too much requests (from users/bots) at the same time processing image will result in an out-of-memory error
 
 

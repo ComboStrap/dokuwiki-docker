@@ -14,18 +14,22 @@ set -Eeuo pipefail
 CLI_NAME=$(basename "$0") # Name of the cli
 
 
-# Send the message to the log file and the stdout
-#
-# The log file can be given via the first arg $2
-# Default to the variable ${LOG_FILE}
+# Log info
 function echo_log() {
 
-  LOCAL_LOG_FILE_PATH=${LOG_FILE}
-  if ! [ -z ${2+x} ]; then
-    LOCAL_LOG_FILE_PATH=$2
-  fi
-  MESSAGE=$1
-  echo -e "$MESSAGE" 2>&1 | tee -a "${LOCAL_LOG_FILE_PATH}"
+  for arg in "$@"; do
+          case "$arg" in
+          "--silent"|"-s")
+            return
+            ;;
+          "")
+            # empty arg
+          ;;
+          *)
+            echo -e "$CLI_NAME: ${arg:-}"
+            ;;
+          esac
+    done
 
 }
 
@@ -120,6 +124,10 @@ function getPhpStatusData() {
 
 function listReport() {
   echo " Pid Cpu Mem"
+  if [ ! -x "$(command -v top)" ]; then
+    echo_err "No top command to return the top process"
+    exit 1
+  fi
   # -b: Batch mode operation and -n: Number of iterations.
   output=$(top -b -n 1 | grep "$processName" | awk '{print $1,$9,$10}')
   OLD_IFS=$IFS
@@ -166,12 +174,21 @@ function infoReport() {
 
 
 function getOsData() {
-  # CPU_Util = (user+system+nice+softirq+steal)/ (user+system+nice+softirq+steal+idle+iowait)
-  # see also mpstat
-  totalCpu=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | xargs printf "%.0f")
+
+  # Top
+  # Check if present (in docker may be not)
+  if [ -x "$(command -v top)" ]; then
+    # CPU_Util = (user+system+nice+softirq+steal)/ (user+system+nice+softirq+steal+idle+iowait)
+    # see also mpstat
+    totalCpu=$(top -bn1 | grep "Cpu(s)" | sed "s/.*, *\([0-9.]*\)%* id.*/\1/" | awk '{print 100 - $1}' | xargs printf "%.0f")
+  fi
+
   # Memory used/total
-  totalMemory=$(free -m | awk 'NR==2{print $3/$2*100}' | xargs printf "%.0f")
-  echo "$totalCpu" "$totalMemory"
+  # Check if present (in docker may be not)
+  if [ -x "$(command -v free)" ]; then
+    totalMemory=$(free -m | awk 'NR==2{print $3/$2*100}' | xargs printf "%.0f")
+    echo "$totalCpu" "$totalMemory"
+  fi
 }
 
 function getOptionValue() {
@@ -327,6 +344,7 @@ function monitor() {
 
   echo "Executing Monitor $continuous in a $type report "
 
+  sleep=5
   while :; do
 
     read -r totalCpu totalMemory <<<"$(getOsData)"
@@ -343,7 +361,6 @@ function monitor() {
         echo "Not a continuous monitoring ($continuous), break"
         break
       fi
-      sleep=5
       echo "  $continuous, sleeping $sleep"
       sleep $sleep
       if [ "$type" == 'list' ]; then
@@ -375,6 +392,7 @@ function print_usage() {
 processName="php-fpm"
 declare -a OPTIONS
 declare -a ARGUMENTS
+COMMAND=""
 # Parsing
 for arg in "$@"; do
   case "$arg" in
@@ -395,6 +413,7 @@ for arg in "$@"; do
     ;;
   esac
 done
+
 
 if [ -z "$COMMAND" ]; then
   echo 'No command was given, list chosen.'
