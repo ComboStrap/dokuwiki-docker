@@ -110,9 +110,13 @@
         # Handle Doku.php Processing
         # After all rewrite, please
         ###############
-        # Example request: http://localhost:8081/doku.php?
+        # Example request: http://localhost:8081/doku.php
         # The matcher start with a forward slash to match a request path
-        handle /doku.php {
+        # We put also the healthcheck here (High priority)
+        @doku {
+            path /doku.php /dokuwiki-docker/ping.php
+        }
+        handle @doku {
             #respond "Doku.php processing '{path}'"
             php_fastcgi 127.0.0.1:9001 {
                 # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
