@@ -129,14 +129,16 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # https://www.php.net/manual/en/install.fpm.configuration.php#listen-allowed-clients
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
 ADD --chmod=0644 resources/conf/php-fpm/php-fpm.conf /usr/local/etc/
-# Default Pool
-ENV PHP_FPM_PM_MAX_SPARE_SERVERS=2
-ENV PHP_FPM_PM_MAX_CHILDREN=3
+# Default (Image, Fetch, ...) Pool
+ENV PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=2
+ENV PHP_FPM_PM_WWW_MAX_CHILDREN=3
+ENV PHP_FPM_PM_WWW_MAX_REQUESTS=500
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
-# Image Pool
-ENV PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
-ENV PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
-ADD --chmod=0644 resources/conf/php-fpm/image.conf /usr/local/etc/php-fpm.d/
+# Doku Pool
+ENV PHP_FPM_PM_DOKU_MAX_SPARE_SERVERS=2
+ENV PHP_FPM_PM_DOKU_MAX_CHILDREN=3
+ENV PHP_FPM_PM_DOKU_MAX_REQUESTS=500
+ADD --chmod=0644 resources/conf/php-fpm/doku.conf /usr/local/etc/php-fpm.d/
 
 ## See also
 ## /usr/local/etc/php-fpm.d/docker.conf

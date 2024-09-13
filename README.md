@@ -43,9 +43,9 @@ You got out of the box:
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
 * Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
-* [Proxy Ready](#is-the-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
+* [Proxy Ready](#is-the-docker-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
 * [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
-* [Dedicated Image Processing Pool](resources/conf/php-fpm/image.conf) to avoid an Out-of-Memory error 
+* Out-of-Memory error protection with a [Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)  
   * Why? Because DokuWiki loads the image in memory, too much requests (from users/bots) at the same time processing image will result in an out-of-memory error
 
 
@@ -182,10 +182,13 @@ Note that you can also check the healthcheck of Php-Fpm at `http://localhost:808
 
 Example: 
 ```bash
-docker exec -ti combo-site-starter curl localhost/php-fpm/status?full
+# Doku Pool (Pages)
+docker exec -ti combo-site-starter curl localhost/php-fpm/doku/status?full
+# Default Pool (Media)
+docker exec -ti combo-site-starter curl localhost/php-fpm/www/status?full
 ```
 ```
-pool:                 www
+pool:                 doku
 process manager:      dynamic
 start time:           07/Aug/2024:14:04:53 +0000
 start since:          173
@@ -195,7 +198,7 @@ max listen queue:     0
 listen queue len:     4096
 idle processes:       1
 request method:       GET
-request URI:          /php-fpm/status?full
+request URI:          /php-fpm/doku/status?full
 content length:       0
 user:                 -
 script:               /var/www/html
@@ -259,32 +262,36 @@ All actual possibles configurations can be seen in the [php dokuwiki-docker.ini 
 ### Configure Php-Fpm Pool
 
 Php-Fpm runs 2 pools of threads:
-* one for images
-* one for all other requests
+* `doku` for the pages (ie doku.php)
+* `www` (default) for all other requests (image, media, ...)
 
-The pool configuration will result in a low or high memory usage. 
-See the [dedicated section](#calculate-the-memory-capacity-sizing)
 
 You can configure them with the following environment variables.
 ```bash
-# Default Pool
-PHP_FPM_PM_MAX_SPARE_SERVERS=2 # the number of thread in idle
-PHP_FPM_PM_MAX_CHILDREN=3 # the maximum number of threads
-# Image Pool
-PHP_FPM_PM_IMAGE_MAX_SPARE_SERVERS=1
-PHP_FPM_PM_IMAGE_MAX_CHILDREN=2
+# Doku Pool (Pages)
+PHP_FPM_PM_DOKU_MAX_SPARE_SERVERS=2 # the number of thread in idle
+PHP_FPM_PM_DOKU_MAX_CHILDREN=3 # the maximum number of threads
+PHP_FPM_PM_DOKU_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart) 
+# WWW Pool (Default, media)
+PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=2
+PHP_FPM_PM_WWW_MAX_CHILDREN=3
+PHP_FPM_PM_WWW_MAX_REQUESTS=500
 ```
 
-For instance for the `max.children` number of threads for the default pool, you would need to set the `PHP_FPM_PM_MAX_CHILDREN` environment.
+For instance for the `max.children` number of threads for the `doku` pool, you would need to set the `PHP_FPM_PM_DOKU_MAX_CHILDREN` environment.
 
 To change it from `3` to `4`
 ```bash
-docker run -e PHP_FPM_PM_MAX_CHILDREN=4 ....
+docker run -e PHP_FPM_PM_DOKU_MAX_CHILDREN=4 ....
 ```
 
-The environment variables are used in their corresponding file:
-* [default pool](resources/conf/php-fpm/www.conf)
-* [image pool](resources/conf/php-fpm/image.conf)
+The pool configuration will result in a low or high memory usage.
+See the [dedicated section](#calculate-the-memory-capacity-sizing)
+
+The environment variables are used in their corresponding files:
+* [Doku pool (pages)](resources/conf/php-fpm/doku.conf)
+* [Default pool (media)](resources/conf/php-fpm/www.conf)
+
 
 
 ### Calculate the Memory Capacity Sizing
@@ -292,14 +299,13 @@ The environment variables are used in their corresponding file:
 
 Below is an example of a `234Mb` container after a load of 4 bots downloading the whole Combostrap website 
 with the default sizing:
-* 3 [default threads](#configure-php-fpm-pool)
-* 1 [image thread](#configure-php-fpm-pool)
+* 3 [doku threads](#configure-php-fpm-pool)
+* 2 [fetch thread](#configure-php-fpm-pool)
 ```
 32 MB php-fpm: master process
-66 MB php-fpm: pool www
-48 MB php-fpm: pool www
-58 MB php-fpm: pool www
-10 MB php-fpm: pool image
+37 MB php-fpm: pool doku
+34 MB php-fpm: pool www
+34 MB php-fpm: pool www
 54 MB caddy run -c
 30 MB /usr/bin/python3 /usr/bin/supervisord -c
 ```
@@ -308,8 +314,7 @@ You can configure the [maximum number of php-fpm children threads](#configure-ph
 to manage the maximum memory size.
 
 You can count:
-  * 60MB by [default php-fpm pool thread](#configure-php-fpm-pool)
-  * 10MB by [image php-fpm pool thread](#configure-php-fpm-pool)
+  * 50MB by [thread](#configure-php-fpm-pool)
   * 35MB for the master php-fpm thread
   * 60MB for the Caddy web server
   * 30MB for the process controller (supervisor)
@@ -652,7 +657,7 @@ If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
 * or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
 
-### Is the image Proxy Ready?
+### Is the Docker Image Proxy Ready?
 
 Yes. 
 
@@ -669,7 +674,7 @@ function.
 
 You should make sure that:
 * the [trusted proxy conf](https://www.dokuwiki.org/config:trustedproxy) is not empty (By default, it's not)
-* the `HTTP_X_FORWARDED_PROTO` header is forwarded if you use a proxy. This image [do it for all proxy in a private range](#is-the-image-proxy-ready).
+* the `HTTP_X_FORWARDED_PROTO` header is forwarded if you use a proxy. This image [do it for all proxy in a private range](#is-the-docker-image-proxy-ready).
 
 
 ## Other related projects

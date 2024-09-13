@@ -56,6 +56,43 @@
 			rewrite * /doku.php?{query}
 		}
 
+		# Php-fpm Localhost only
+        @localhost {
+            remote_ip 127.0.0.1 ::1
+        }
+        handle @localhost {
+            # php-fpm status available only locally
+            # env are passed to php
+            # see https://www.php.net/manual/en/reserved.variables.server.php
+            # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+            # and we don't get a not found
+            reverse_proxy /php-fpm/www/status 127.0.0.1:9000 {
+                transport fastcgi {
+                    env SCRIPT_NAME {path}
+                }
+            }
+            reverse_proxy /php-fpm/doku/status 127.0.0.1:9001 {
+                transport fastcgi {
+                    env SCRIPT_NAME {path}
+                }
+            }
+        }
+
+        # php-fpm ping - available publicly
+        # env are passed to php
+        # see https://www.php.net/manual/en/reserved.variables.server.php
+        # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+        reverse_proxy /php-fpm/www/ping 127.0.0.1:9000 {
+            transport fastcgi {
+                env SCRIPT_NAME {path}
+            }
+        }
+        reverse_proxy /php-fpm/doku/ping 127.0.0.1:9001 {
+            transport fastcgi {
+                env SCRIPT_NAME {path}
+            }
+        }
+
 		# If the request does not match any file at path,
 		# rewrite to the doku.php entrypoint
 		# Match php-fpm requests
@@ -65,74 +102,37 @@
 		# https://caddyserver.com/docs/caddyfile/matchers#not
 		@default-rewrite {
 			not file
-			not path /php-fpm/*
+			not path /doku.php /php-fpm/*
 		}
 		rewrite @default-rewrite /doku.php?id={path}&{query}
+
+		###############
+        # Handle Doku.php Processing
+        # After all rewrite, please
+        ###############
+        # Example request: http://localhost:8081/doku.php?
+        # The matcher start with a forward slash to match a request path
+        handle /doku.php {
+            #respond "Doku.php processing '{path}'"
+            php_fastcgi 127.0.0.1:9001 {
+                # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+                # From private ranges proxy (Used in Kubernetes/docker case)
+                trusted_proxies private_ranges
+            }
+        }
+
+        ###############
+        # Default (Handle fetch, ...)
+        ###############
+        # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
+        # handles PHP files using FastCGI
+        # Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
+        php_fastcgi 127.0.0.1:9000 {
+            # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+            # From private ranges proxy (Used in Kubernetes/docker case)
+            trusted_proxies private_ranges
+        }
+
 	}
 
-	####################
-	# Handle php-fpm ping and status
-	####################
-	route {
-		# Localhost only
-		@localhost {
-			remote_ip 127.0.0.1 ::1
-		}
-		handle @localhost {
-			# php-fpm status available only locally
-			# env are passed to php
-			# see https://www.php.net/manual/en/reserved.variables.server.php
-			# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-			# and we don't get a not found
-			reverse_proxy /php-fpm/status 127.0.0.1:9000 {
-				transport fastcgi {
-					env SCRIPT_NAME {path}
-				}
-			}
-			reverse_proxy /php-fpm/image/status 127.0.0.1:9001 {
-				transport fastcgi {
-					env SCRIPT_NAME {path}
-				}
-			}
-		}
-
-		# php-fpm ping - available publicly
-		# env are passed to php
-		# see https://www.php.net/manual/en/reserved.variables.server.php
-		# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-		reverse_proxy /php-fpm/ping 127.0.0.1:9000 {
-			transport fastcgi {
-				env SCRIPT_NAME {path}
-			}
-		}
-		reverse_proxy /php-fpm/image/ping 127.0.0.1:9001 {
-			transport fastcgi {
-				env SCRIPT_NAME {path}
-			}
-		}
-	}
-
-	# Handle Image Processing
-	# @image is a named matcher:
-	# https://caddyserver.com/docs/caddyfile/matchers#named-matchers
-	# Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
-	@image expression {query.media}.matches(".*(jpg|jpeg|png|gif|bmp|tif|tiff|webp)$")
-	handle @image {
-		php_fastcgi 127.0.0.1:9001 {
-			# Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-			# From private ranges proxy (Used in Kubernetes/docker case)
-			trusted_proxies private_ranges
-		}
-	}
-
-	###############
-	# Default
-	###############
-	# https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
-	# handles PHP files using FastCGI
-	php_fastcgi 127.0.0.1:9000 {
-		# Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-		# From private ranges proxy (Used in Kubernetes/docker case)
-		trusted_proxies private_ranges
-	}
 }
