@@ -43,7 +43,7 @@ You got out of the box:
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
 * Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
-* [Proxy Ready](#is-the-docker-image-proxy-ready) - to detect HTTPS in Docker, Kubernetes environment
+* [Proxy Ready](#is-the-docker-image-proxy-ready) (to report the real ip behind a proxy)
 * [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
 * Out-of-Memory error protection with a [Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)  
   * Why? Because DokuWiki loads the image in memory, too much requests (from users/bots) at the same time processing image will result in an out-of-memory error
@@ -665,11 +665,24 @@ If you want to keep the size low, you need to:
 
 Yes. 
 
-If you set your image behind a proxy, the Caddy redirection
-[trusts all proxy](https://caddyserver.com/docs/caddyfile/options#trusted-proxies) 
-that are in a private range.
+By default, this image will trusts all proxy that are in a private range.
 
-`192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
+ie: `192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
+
+Otherwise, you can set the IP or CIDR of trusted proxy with the `DOKU_DOCKER_TRUSTED_PROXY` environment variable 
+```bash
+# example with a Kubernetes CIDR node where the ingress is installed
+DOKU_DOCKER_TRUSTED_PROXY=10.42.1.0/24
+```
+More information on the value can be found in the [trusted-proxy caddy documentation](https://caddyserver.com/docs/caddyfile/options#trusted-proxies)
+
+Note that the `client_ip` is configured to get the value from these headers:
+* `Cf-Connecting-Ip` - Cloudflare Proxy
+* `X-Forwarded-For` - Proxy Protocol
+* `X-Real-IP`
+
+The [Caddy web access log](#where-is-the-web-access-log-file) also reports the `client_ip` and not the `remote_ip` (ie proxy ip)
+
 
 ### Why my sitemap is not generating URL with https?
 
@@ -679,6 +692,13 @@ function.
 You should make sure that:
 * the [trusted proxy conf](https://www.dokuwiki.org/config:trustedproxy) is not empty (By default, it's not)
 * the `HTTP_X_FORWARDED_PROTO` header is forwarded if you use a proxy. This image [do it for all proxy in a private range](#is-the-docker-image-proxy-ready).
+
+### Where is the web access log file?
+
+The access log file:
+* is located at `/var/log/caddy/access.log`
+* has the [Apache Common Log format](https://github.com/caddyserver/transform-encoder?tab=readme-ov-file#apache-common-log-format-example)
+* with the real `client_ip` (instead of the `remote_ip`)
 
 
 ## Other related projects

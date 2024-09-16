@@ -16,9 +16,13 @@
 
 ## How to develop the bash scripts and configuration
 
+
+```bash
+cd ~/code/dokuwiki-docker
+```
 * Use the [last build](../build.sh) as some script need Dokuwiki scripts
 ```bash
-/build.sh
+./build.sh
 ```
 * Give execution permissions on your desktop to the scripts
 ```bash

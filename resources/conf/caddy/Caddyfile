@@ -1,10 +1,35 @@
-# https://www.dokuwiki.org/install:caddy
+# global options block
+{
+    servers {
+        # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+        # From private ranges proxy (Used in Kubernetes/docker case)
+        trusted_proxies static {$DOKU_DOCKER_TRUSTED_PROXY}
+        # https://caddyserver.com/docs/caddyfile/options#client-ip-headers
+        # Cf-Connecting-Ip is the header of cloudflare
+        client_ip_headers Cf-Connecting-Ip X-Forwarded-For X-Real-IP
+    }
+}
 
 # public
+# https://www.dokuwiki.org/install:caddy
 :80 {
 	# Root of the server (added to all relative path)
 	# https://caddyserver.com/docs/caddyfile/directives/root
 	root * /var/www/html
+
+	# Log
+	# https://caddyserver.com/docs/caddyfile/directives/log#examples
+    log access-formatted {
+        output file /var/log/caddy/access.log
+        # https://github.com/caddyserver/transform-encoder?tab=readme-ov-file#apache-common-log-format-example
+        # To see the data of a request, see https://caddyserver.com/docs/logging
+        # We use `client_ip` in place of `remote_ip` to manage the proxy
+    	format transform `{request>client_ip} - {user_id} [{ts}] "{request>method} {request>uri} {request>proto}" {status} {size}` {
+        	time_format "02/Jan/2006:15:04:05 -0700"
+        }
+    }
+    # https://caddyserver.com/docs/caddyfile/directives/log_skip
+    log_skip /dokuwiki-docker/ping.php
 
 	# Response encoding
 	encode gzip zstd
@@ -118,11 +143,7 @@
         }
         handle @doku {
             #respond "Doku.php processing '{path}'"
-            php_fastcgi 127.0.0.1:9001 {
-                # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-                # From private ranges proxy (Used in Kubernetes/docker case)
-                trusted_proxies private_ranges
-            }
+            php_fastcgi 127.0.0.1:9001
         }
 
         ###############
@@ -131,11 +152,7 @@
         # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
         # handles PHP files using FastCGI
         # Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
-        php_fastcgi 127.0.0.1:9000 {
-            # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-            # From private ranges proxy (Used in Kubernetes/docker case)
-            trusted_proxies private_ranges
-        }
+        php_fastcgi 127.0.0.1:9000
 
 	}
 

@@ -1,3 +1,8 @@
+# Build caddy
+FROM caddy:2.8.4-builder AS caddy-builder
+RUN xcaddy build \
+    --with github.com/caddyserver/transform-encoder
+
 # Dokuwiki in Docker
 # Files are at the end to not build package agains
 #
@@ -5,7 +10,6 @@
 # https://hub.docker.com/_/php/
 # Dockerfile is at: https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/Dockerfile
 FROM php:8.3-fpm-bookworm
-
 
 ####################################
 # Package Installation
@@ -48,7 +52,7 @@ RUN install-php-extensions gd intl opcache bz2
 ####################################
 # Caddy Installation
 ####################################
-COPY --from=caddy:2.8.4-alpine /usr/bin/caddy /usr/bin/caddy
+COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 
 ####################################
 # Dokuwiki Download
@@ -139,6 +143,7 @@ ENV PHP_FPM_PM_DOKU_MAX_SPARE_SERVERS=2
 ENV PHP_FPM_PM_DOKU_MAX_CHILDREN=3
 ENV PHP_FPM_PM_DOKU_MAX_REQUESTS=500
 ADD --chmod=0644 resources/conf/php-fpm/doku.conf /usr/local/etc/php-fpm.d/
+RUN mkdir -p /var/log/php-fpm && chmod 0777 /var/log/php-fpm
 
 ## See also
 ## /usr/local/etc/php-fpm.d/docker.conf
@@ -149,6 +154,8 @@ RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to crea
 EXPOSE 80
 RUN mkdir $XDG_CONFIG_HOME/caddy && chmod 0777 $XDG_CONFIG_HOME/caddy # Gives permission to the running user to create files in it
 COPY resources/conf/caddy/Caddyfile $XDG_CONFIG_HOME/caddy/Caddyfile
+# Trusted proxy caddy configuration
+ENV DOKU_DOCKER_TRUSTED_PROXY=private_ranges
 #### Bash (to get the same env with `docker exec bash -l`)
 # When bash initializes a non-login interactive bash shell on a Debian/Ubuntu-like system,
 # the shell first reads /etc/bash.bashrc and then reads ~/.bashrc.
