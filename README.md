@@ -126,11 +126,17 @@ docker run \
 
 ### Get Healthcheck / Liveness / Probes / Container State
 
-If you wish to set a healthcheck point, you may use the [ping.php endpoint](resources/dokuwiki-docker/meta/status/ping.php) 
+If you wish to set a healthcheck point, you may use:
+* the dokuwiki ping endpoint `/dokuwiki-docker/ping.php` (ie [ping.php endpoint](resources/dokuwiki-docker/meta/status/ping.php))
+* or the php-fpm endpoint `/php-fpm/doku/ping` (ie to the `ping.path` and `ping.response` [configurations](resources/conf/php-fpm/doku.conf))
 
-ie `/dokuwiki-docker/ping.php`
+Note that:
+* if the [page php-fpm](#configure-php-fpm-pool) is full because there is too much request (bots or visitors), 
+the dokuwiki ping will fail while the php-fpm endpoint will not
+* if you want more control on `php-fpm`, you can create your own image and use the [php-fpm-healthcheck](https://github.com/renatomefi/php-fpm-healthcheck)
 
 Example:
+* in docker: the `HEALTCHECK` is already defined in the [Dockerfile](Dockerfile)
 * in a Kubernetes manifest
 ```yaml
 containers:
@@ -171,11 +177,9 @@ containers:
       failureThreshold: 3
       successThreshold: 1
 ```
-* in docker: the `HEALTCHECK` is already defined in the [Dockerfile](Dockerfile)
 
 
-Note that you can also check the healthcheck of Php-Fpm at `http://localhost:8081/php-fpm/ping` 
-(thanks to the `ping.path` and `ping.response` [configurations](resources/conf/php-fpm/www.conf))
+
 
 
 ### Monitor php-fpm with status on localhost only

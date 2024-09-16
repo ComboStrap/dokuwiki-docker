@@ -378,6 +378,24 @@ function monitor() {
 
 }
 
+# https://www.php.net/manual/en/fpm.status.php
+function php-fpm-status(){
+
+  PHP_FPM_ENDPOINT_PATH=/php-fpm/status
+  phpStatusResponse=$(curl -s -w "\n%{http_code}" "http://localhost$PHP_FPM_ENDPOINT_PATH?full&json")
+  phpHttpStatus=${phpStatusResponse: -3} # the space is important
+  if [ "$phpHttpStatus" != '200' ]; then
+    echo_err "Php Status returned a bad response: $phpHttpStatus"
+    exit 1
+  fi
+  json=${phpStatusResponse:0:-4} # all but the last 4 digits
+
+}
+
+function php-fpm-conf(){
+  sudo php-fpm --tt
+}
+
 function print_usage() {
 
   echo ""
