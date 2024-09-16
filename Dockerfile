@@ -1,7 +1,9 @@
 # Build caddy
 FROM caddy:2.8.4-builder AS caddy-builder
+# Note: xcaddy build creates the caddy binary in the current directory
 RUN xcaddy build \
-    --with github.com/caddyserver/transform-encoder
+    --with github.com/caddyserver/transform-encoder \
+    --with github.com/mholt/caddy-ratelimit
 
 # Dokuwiki in Docker
 # Files are at the end to not build package agains

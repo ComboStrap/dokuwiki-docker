@@ -77,7 +77,7 @@ function killPhpFpm() {
 
   report=$(infoReport "$pid")
   kill -9 "$pid"
-  # note: in cron, the output is send to the user
+  # note: in cron, the PHP_FPM_STATUS is send to the user
   # We could therefore not use the mail command
   # but a cron mode
   echo -e "The php-fpm $pid was killed\n$report" | mail -s "$subject" root
@@ -114,10 +114,10 @@ function statReport() {
 function getPhpStatusData() {
   json=$(curl -s 'http://localhost/php-status?full&json')
   if [ -z "$1" ]; then
-    phpStatus=$(echo "$json" | jq --raw-output ".processes[]")
+    phpStatus=$(echo "$json" | jq --raw-PHP_FPM_STATUS ".processes[]")
   else
     pid=$1
-    phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid)")
+    phpStatus=$(echo "$json" | jq --raw-PHP_FPM_STATUS ".processes[] | select(.pid == $pid)")
   fi
   echo "$phpStatus"
 }
@@ -129,21 +129,21 @@ function listReport() {
     exit 1
   fi
   # -b: Batch mode operation and -n: Number of iterations.
-  output=$(top -b -n 1 | grep "$processName" | awk '{print $1,$9,$10}')
+  PHP_FPM_STATUS=$(top -b -n 1 | grep "$processName" | awk '{print $1,$9,$10}')
   OLD_IFS=$IFS
   IFS=$'\n'
   counter=0
   json=$(curl -s 'http://localhost/php-fpm/status?full&json')
   while IFS=" " read -r pid cpu mem; do
     # extract the state and the request uri
-    # --raw-output is to delete the quotes of the string created at the end of the jq pipeline with jq string interpolation
-    phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
+    # --raw-PHP_FPM_STATUS is to delete the quotes of the string created at the end of the jq pipeline with jq string interpolation
+    phpStatus=$(echo "$json" | jq --raw-PHP_FPM_STATUS ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
     read -r state requestUri <<<"$phpStatus"
     cpu=$(printf "%.0f" "$cpu") # to integer
     mem=$(printf "%.0f" "$mem") # to integer
     echo "$pid $cpu $mem $state $requestUri"
     counter=$((counter + 1))
-  done <<<"$output"
+  done <<<"$PHP_FPM_STATUS"
   IFS=$OLD_IFS
   echo -e "\n$counter processes total"
 }
@@ -273,7 +273,7 @@ function control() {
     if [ $service == false ]; then
       printf "Pid      Cpu  Mem  Url\n"
     fi
-    output=$(top -b -n 1 | grep "php-fpm" | awk '{print $1,$9,$10}')
+    PHP_FPM_STATUS=$(top -b -n 1 | grep "php-fpm" | awk '{print $1,$9,$10}')
     OLD_IFS=$IFS
     IFS=$'\n'
     if [ -x "$(command -v systemctl)" ]; then
@@ -294,7 +294,7 @@ function control() {
     json=${phpStatusResponse:0:-4} # all but the last 4 digits
     while IFS=" " read -r pid cpu mem; do
 
-      phpStatus=$(echo "$json" | jq --raw-output ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
+      phpStatus=$(echo "$json" | jq --raw-PHP_FPM_STATUS ".processes[] | select(.pid == $pid) | \"\(.\"state\") \(.\"request uri\")\"")
       IFS=" " read -r state requestUri <<<"$phpStatus"
       if [ "$pid" != "$mainPid" ]; then
         if [[ "$state" == "Running" ]] && [[ ! "$requestUri" =~ $PHP_FPM_ENDPOINT_PATH ]]; then
@@ -308,7 +308,7 @@ function control() {
         fi
       fi
 
-    done <<<"$output"
+    done <<<"$PHP_FPM_STATUS"
     IFS=$OLD_IFS
 
     if [ $service == false ]; then
@@ -379,20 +379,30 @@ function monitor() {
 }
 
 # https://www.php.net/manual/en/fpm.status.php
-function php-fpm-status(){
+function php_fpm_status(){
 
-  PHP_FPM_ENDPOINT_PATH=/php-fpm/status
-  phpStatusResponse=$(curl -s -w "\n%{http_code}" "http://localhost$PHP_FPM_ENDPOINT_PATH?full&json")
-  phpHttpStatus=${phpStatusResponse: -3} # the space is important
-  if [ "$phpHttpStatus" != '200' ]; then
-    echo_err "Php Status returned a bad response: $phpHttpStatus"
-    exit 1
-  fi
-  json=${phpStatusResponse:0:-4} # all but the last 4 digits
+
+  PHP_FPM_ENDPOINT_PATHS=("/php-fpm/doku/status" "/php-fpm/www/status")
+  while true; do
+    for PHP_FPM_ENDPOINT_PATH  in "${PHP_FPM_ENDPOINT_PATHS[@]}"; do
+      local URL="http://localhost$PHP_FPM_ENDPOINT_PATH"
+      phpStatusResponse=$(curl -s -w "\n%{http_code}" "$URL")
+      phpHttpStatus=${phpStatusResponse: -3} # the space is important
+      if [ "$phpHttpStatus" != '200' ]; then
+        echo_err "Php Status returned a bad response: $phpHttpStatus"
+        continue
+      fi
+      PHP_FPM_STATUS=${phpStatusResponse:0:-4} # deleting the http code (all but the last 4 digits)
+      echo "$PHP_FPM_STATUS"
+    done
+    sleep 1
+    clear
+  done;
+
 
 }
 
-function php-fpm-conf(){
+function php_fpm_conf(){
   sudo php-fpm --tt
 }
 
@@ -410,6 +420,8 @@ function print_usage() {
   echo "     * monitor [--loop] [--list] [--max=xxx]- monitor the os and kill if necessary (run once by default or in loop, show a summary by default or a list)"
   echo "     * stat [kill] - returns average Cpu and memory over the last 3 seconds. Kill if needed"
   echo "     * control [--loop] [--kill] - list the running process, the kill options will kill the task runners if the memory is critical"
+  echo "     * php-fpm-status - status of php-fpm"
+  echo "     * php-fpm-conf   - conf of php-fpm"
   echo ""
 
 }
@@ -444,8 +456,8 @@ done
 
 
 if [ "$COMMAND" == "" ]; then
-  echo 'No command was given, list chosen.'
-  COMMAND='ls'
+  echo 'No command was given, help chosen.'
+  COMMAND='help'
 fi
 
 echo
@@ -475,6 +487,12 @@ kill)
   ;;
 control)
   control "${OPTIONS[@]}"
+  ;;
+php-fpm-status)
+  php_fpm_status
+  ;;
+php-fpm-conf)
+  php_fpm_conf
   ;;
 help)
   print_usage

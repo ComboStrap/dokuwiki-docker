@@ -1,13 +1,13 @@
 # global options block
 {
-    servers {
-        # Forward HTTP_X_FORWARDED_PROTO and other proxy headers
-        # From private ranges proxy (Used in Kubernetes/docker case)
-        trusted_proxies static {$DOKU_DOCKER_TRUSTED_PROXY}
-        # https://caddyserver.com/docs/caddyfile/options#client-ip-headers
-        # Cf-Connecting-Ip is the header of cloudflare
-        client_ip_headers Cf-Connecting-Ip X-Forwarded-For X-Real-IP
-    }
+	servers {
+		# Forward HTTP_X_FORWARDED_PROTO and other proxy headers
+		# From private ranges proxy (Used in Kubernetes/docker case)
+		trusted_proxies static {$DOKU_DOCKER_TRUSTED_PROXY}
+		# https://caddyserver.com/docs/caddyfile/options#client-ip-headers
+		# Cf-Connecting-Ip is the header of cloudflare
+		client_ip_headers Cf-Connecting-Ip X-Forwarded-For X-Real-IP
+	}
 }
 
 # public
@@ -19,17 +19,17 @@
 
 	# Log
 	# https://caddyserver.com/docs/caddyfile/directives/log#examples
-    log access-formatted {
-        output file /var/log/caddy/access.log
-        # https://github.com/caddyserver/transform-encoder?tab=readme-ov-file#apache-common-log-format-example
-        # To see the data of a request, see https://caddyserver.com/docs/logging
-        # We use `client_ip` in place of `remote_ip` to manage the proxy
-    	format transform `{request>client_ip} - {user_id} [{ts}] "{request>method} {request>uri} {request>proto}" {status} {size}` {
-        	time_format "02/Jan/2006:15:04:05 -0700"
-        }
-    }
-    # https://caddyserver.com/docs/caddyfile/directives/log_skip
-    log_skip /dokuwiki-docker/ping.php
+	log access-formatted {
+		output file /var/log/caddy/access.log
+		# https://github.com/caddyserver/transform-encoder?tab=readme-ov-file#apache-common-log-format-example
+		# To see the data of a request, see https://caddyserver.com/docs/logging
+		# We use `client_ip` in place of `remote_ip` to manage the proxy
+		format transform `{request>client_ip} - {user_id} [{ts}] "{request>method} {request>uri} {request>proto}" {status} {size}` {
+			time_format "02/Jan/2006:15:04:05 -0700"
+		}
+	}
+	# https://caddyserver.com/docs/caddyfile/directives/log_skip
+	log_skip /dokuwiki-docker/ping.php
 
 	# Response encoding
 	encode gzip zstd
@@ -76,47 +76,46 @@
 			rewrite @export /doku.php?do=export_{re.export.1}&{query}&id={re.export.2}
 		}
 
-		# Rewrite to doku.php
-		handle / {
-			rewrite * /doku.php?{query}
-		}
+		# Rewrite the home (/) to doku.php
+		rewrite / /doku.php?{query}
+
 
 		# Php-fpm Localhost only
-        @localhost {
-            remote_ip 127.0.0.1 ::1
-        }
-        handle @localhost {
-            # php-fpm status available only locally
-            # env are passed to php
-            # see https://www.php.net/manual/en/reserved.variables.server.php
-            # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-            # and we don't get a not found
-            reverse_proxy /php-fpm/www/status 127.0.0.1:9000 {
-                transport fastcgi {
-                    env SCRIPT_NAME {path}
-                }
-            }
-            reverse_proxy /php-fpm/doku/status 127.0.0.1:9001 {
-                transport fastcgi {
-                    env SCRIPT_NAME {path}
-                }
-            }
-        }
+		@localhost {
+			remote_ip 127.0.0.1 ::1
+		}
+		handle @localhost {
+			# php-fpm status available only locally
+			# env are passed to php
+			# see https://www.php.net/manual/en/reserved.variables.server.php
+			# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+			# and we don't get a not found
+			reverse_proxy /php-fpm/www/status 127.0.0.1:9000 {
+				transport fastcgi {
+					env SCRIPT_NAME {path}
+				}
+			}
+			reverse_proxy /php-fpm/doku/status 127.0.0.1:9001 {
+				transport fastcgi {
+					env SCRIPT_NAME {path}
+				}
+			}
+		}
 
-        # php-fpm ping - available publicly
-        # env are passed to php
-        # see https://www.php.net/manual/en/reserved.variables.server.php
-        # env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
-        reverse_proxy /php-fpm/www/ping 127.0.0.1:9000 {
-            transport fastcgi {
-                env SCRIPT_NAME {path}
-            }
-        }
-        reverse_proxy /php-fpm/doku/ping 127.0.0.1:9001 {
-            transport fastcgi {
-                env SCRIPT_NAME {path}
-            }
-        }
+		# php-fpm ping - available publicly
+		# env are passed to php
+		# see https://www.php.net/manual/en/reserved.variables.server.php
+		# env are created by caddy, we set SCRIPT_NAME so that caddy does not add the root path
+		reverse_proxy /php-fpm/www/ping 127.0.0.1:9000 {
+			transport fastcgi {
+				env SCRIPT_NAME {path}
+			}
+		}
+		reverse_proxy /php-fpm/doku/ping 127.0.0.1:9001 {
+			transport fastcgi {
+				env SCRIPT_NAME {path}
+			}
+		}
 
 		# If the request does not match any file at path,
 		# rewrite to the doku.php entrypoint
@@ -132,28 +131,42 @@
 		rewrite @default-rewrite /doku.php?id={path}&{query}
 
 		###############
-        # Handle Doku.php Processing
-        # After all rewrite, please
-        ###############
-        # Example request: http://localhost:8081/doku.php
-        # The matcher start with a forward slash to match a request path
-        # We put also the healthcheck here (High priority)
-        @doku {
-            path /doku.php /dokuwiki-docker/ping.php
-        }
-        handle @doku {
-            #respond "Doku.php processing '{path}'"
-            php_fastcgi 127.0.0.1:9001
-        }
+		# Handle Doku.php Processing
+		# After all rewrite, please
+		###############
+		# Example request: http://localhost:8081/doku.php
+		# The matcher start with a forward slash to match a request path
+		@doku {
+			path /doku.php /lib/exe/css.php
+		}
+		handle @doku {
+			rate_limit {
+				zone dynamic_example {
+					key {client_ip}
+					events 1
+					window 2s
+				}
+			}
+			# respond "Doku Handler {path}"
+			php_fastcgi 127.0.0.1:9001
+		}
 
-        ###############
-        # Default (Handle fetch, ...)
-        ###############
-        # https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
-        # handles PHP files using FastCGI
-        # Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
-        php_fastcgi 127.0.0.1:9000
+		# Health check
+		# We put also the healthcheck in the doku pool (High priority)
+		handle /dokuwiki-docker/ping.php {
+			# no rate limit
+			#respond "Ping Handler"
+			php_fastcgi 127.0.0.1:9001
+		}
 
+
+		###############
+		# Default (Handle fetch, ...)
+		###############
+		# https://caddyserver.com/docs/caddyfile/directives/php_fastcgi#expanded-form
+		# handles PHP files using FastCGI
+		# Example request: http://localhost:8081/lib/exe/fetch.php?media=image.jpg
+		respond "Default Handler {path}"
+		php_fastcgi 127.0.0.1:9000
 	}
-
 }
