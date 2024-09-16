@@ -158,6 +158,9 @@ RUN mkdir $XDG_CONFIG_HOME/caddy && chmod 0777 $XDG_CONFIG_HOME/caddy # Gives pe
 COPY resources/conf/caddy/Caddyfile $XDG_CONFIG_HOME/caddy/Caddyfile
 # Trusted proxy caddy configuration
 ENV DOKU_DOCKER_TRUSTED_PROXY=private_ranges
+# Rate limit of pages
+ENV DOKU_DOCKER_PAGES_RATE_LIMIT_EVENTS=2
+ENV DOKU_DOCKER_PAGES_RATE_LIMIT_WINDOW=1s
 #### Bash (to get the same env with `docker exec bash -l`)
 # When bash initializes a non-login interactive bash shell on a Debian/Ubuntu-like system,
 # the shell first reads /etc/bash.bashrc and then reads ~/.bashrc.

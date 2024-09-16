@@ -45,8 +45,8 @@ You got out of the box:
 * Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
 * [Proxy Ready](#is-the-docker-image-proxy-ready) (to report the real ip behind a proxy)
 * [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
-* Out-of-Memory error protection with a [Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)  
-  * Why? Because DokuWiki loads the image in memory, too much requests (from users/bots) at the same time processing image will result in an out-of-memory error
+* Out-of-Memory error protection with a [Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)
+* [Pages Rate limit for scan protection](#how-to-define-the-rate-limit-for-pages) 
 
 
 ## How to
@@ -535,6 +535,23 @@ docker run \
   ....
 ```
 
+### How to define the rate limit for pages?
+
+By default, there is a rate limit of max `2` pages every `1` second.
+
+A human would not click quicker.
+
+You can configure the rate limite for pages via this environment variables:
+```bash
+DOKU_DOCKER_PAGES_RATE_LIMIT_EVENTS=2 # the number of pages request
+DOKU_DOCKER_PAGES_RATE_LIMIT_WINDOW=1s # the window (1s) 
+```
+
+Note that if you are behind a proxy, you should be sure to [set it as trusted](#is-the-docker-image-proxy-ready)
+otherwise the client would be the proxy, and you would hit the rate limit pretty quickly.
+
+To disable the rate limit, you need to increase the rate limit environment variables.
+
 ## Tag 
 
 We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-image)
@@ -663,9 +680,7 @@ If you want to keep the size low, you need to:
 
 ### Is the Docker Image Proxy Ready?
 
-Yes. 
-
-By default, this image will trusts all proxy that are in a private range.
+Yes. By default, this image will trust all proxy that are in a private range.
 
 ie: `192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
 
