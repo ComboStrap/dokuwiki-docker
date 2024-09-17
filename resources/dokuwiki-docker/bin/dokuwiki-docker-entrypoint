@@ -248,7 +248,27 @@ else
   dd_echo "Automatic Update of search index disabled"
 fi
 
+###############
+# Git Config
 ################
+DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-}
+GIT_USER_EMAIL=$(git config --global --get user.email)
+if [ $DOKU_DOCKER_ADMIN_EMAIL != "" ] && [ $GIT_USER_EMAIL == "" ] ; then
+  dd_echo "Git user email configuration set to $DOKU_DOCKER_ADMIN_EMAIL"
+  git config --global user.email "$DOKU_DOCKER_ADMIN_EMAIL"
+else
+  dd_echo "Git user email: $GIT_USER_EMAIL"
+fi
+
+GIT_USER_NAME=$(git config --global --get user.name)
+if [ $GIT_USER_NAME == "" ]; then
+  GIT_USER_NAME="$DOKU_DOCKER_ADMIN_NAME (Combostrap DokuWiki Docker)"
+  git config --global user.name "$GIT_USER_NAME"
+  dd_echo "Git user name configuration set to $DOKU_DOCKER_ADMIN_EMAIL"
+else
+  dd_echo "Git user name: $GIT_USER_NAME"
+fi
+
 # Start
 ################
 # https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/docker-php-entrypoint

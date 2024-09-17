@@ -35,18 +35,19 @@ You got out of the box:
 * [Nice URL rewrite ](https://www.dokuwiki.org/rewrite)
 * [Automatic Search Index Update](#how-to-disable-the-automatic-update-of-the-search-index)
 * [Automatic Plugins Installation](https://combostrap.com/admin/combostrap-website-yolv2qw6#plugins)
-* [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
-* [Monitoring Endpoint](#monitor-php-fpm-with-status-on-localhost-only)
+* SEO Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
 * Performance:
   * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
   * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
+* [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
+* [Metrics Endpoint](#monitor-php-fpm-with-status-on-localhost-only)
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
-* Search Engine Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
 * [Proxy Ready](#is-the-docker-image-proxy-ready) (to report the real ip behind a proxy)
-* [Maintenance script](#how-to-clean-up-a-dokuwiki-instance-maintenance)
-* Out-of-Memory error protection with a [Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)
-* [Pages Rate limit for scan protection](#how-to-define-the-rate-limit-for-pages) 
+* [Maintenance Ready](#how-to-clean-up-a-dokuwiki-instance-maintenance)
+* [Out-of-Memory error protection with a Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)
+* [Crawl/Scan protection](#how-to-define-the-rate-limit-for-pages)
+* [Git Ready]()
 
 
 ## How to
@@ -228,7 +229,7 @@ docker run -e DOKU_DOCKER_STARTER_SITE=false
 
 ### Set your ComboStrap Git WebSite
 
-To defines the ComboStrap WebSite that this image should install, 
+To defines the [ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-yfi22ewn) that this image should install, 
 you need to set the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
 
 Example:
@@ -434,7 +435,7 @@ docker exec -it containerName bash -l
 kubectl exec -it podName -- bash -l
 kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash -l
 ```
-* Set the Git Author Info
+* The Git Author Info are set to 
 ```bash
 git config --global user.email "you@example.com"
 git config --global user.name "Your Name"
