@@ -31,7 +31,7 @@ You got out of the box:
 * [Website instance](https://combostrap.com/admin/combostrap-website-5gxpcdgy)
   * You can:
     * [disable it](#disable-automatic-default-starter-website-installation)
-    * or [set your own](#set-your-combostrap-git-website)
+    * or [set your own](#git-pull-mode---set-your-combostrap-git-website)
 * [Nice URL rewrite ](https://www.dokuwiki.org/rewrite)
 * [Automatic Search Index Update](#how-to-disable-the-automatic-update-of-the-search-index)
 * [Automatic Plugins Installation](https://combostrap.com/admin/combostrap-website-yolv2qw6#plugins)
@@ -47,7 +47,9 @@ You got out of the box:
 * [Maintenance Ready](#how-to-clean-up-a-dokuwiki-instance-maintenance)
 * [Out-of-Memory error protection with a Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)
 * [Crawl/Scan protection](#how-to-define-the-rate-limit-for-pages)
-* [Git Ready]()
+* [Git Ready](#how-to-git) with 2 mode of developments:
+  * [Pull Mode](#git-pull-mode---set-your-combostrap-git-website)
+  * [Push Mode](#git-push-mode)
 
 
 ## How to
@@ -227,15 +229,6 @@ To disable this behavior, you need to set the `DOKU_DOCKER_STARTER_SITE` environ
 docker run -e DOKU_DOCKER_STARTER_SITE=false
 ```
 
-### Set your ComboStrap Git WebSite
-
-To defines the [ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-yfi22ewn) that this image should install, 
-you need to set the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
-
-Example:
-```bash
-docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-starter.git
-```
 
 ### Set in dev mode
 
@@ -412,41 +405,7 @@ docker rmi ghcr.io/combostrap/dokuwiki:php8.3-latest
 docker pull ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
 
-### Commit and push changes from your server container to your Git Repository
 
-You can make change online from your server container 
-and push them to your git repository.
-
-To make this happen, you need to perform the following configuration:
-* Create a private SSH key and register it in your Git Provider. Example: [GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-* At the `run` command
-  * Mount the private SSH key with a standard default name (ie for instance `id_ed25519`) in the `~/ssh` directory.
-  * Set the Git URI to an SSH one.; ie `git@github.com:namespace/repo.git`, not `https://`
-```bash
-docker run \
-  -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git  
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
-```
-* Get into your container / pod
-```bash
-# docker
-docker exec -it containerName bash -l
-# Kubernetes
-kubectl exec -it podName -- bash -l
-kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash -l
-```
-* The Git Author Info are set to 
-```bash
-git config --global user.email "you@example.com"
-git config --global user.name "Your Name"
-```
-* You can now use git as normal and push any changes
-```bash
-git status
-git add .
-git commit -m "My Commit message"
-git push
-```
 
 ### How to disable the automatic update of the search index
 
@@ -552,6 +511,68 @@ Note that if you are behind a proxy, you should be sure to [set it as trusted](#
 otherwise the client would be the proxy, and you would hit the rate limit pretty quickly.
 
 To disable the rate limit, you need to increase the rate limit environment variables.
+
+## How to Git
+
+`DokuWiki Docker` supports two developments mode with Git:
+* the [pull mode](#git-pull-mode---set-your-combostrap-git-website): you create your pages locally, and you make them public by pulling your Git repository
+* the push mode: you create your pages on the server, and you push your changes
+
+### Git: Pull Mode - Set your ComboStrap Git WebSite
+
+In this mode, you would:
+* run [DokuWiki Docker locally with a volume mount](#mount-a-volume) 
+* push your changes to your Git Repository
+
+
+To publish your website, you would then define the [ComboStrap WebSite](https://combostrap.com/admin/combostrap-website-yfi22ewn)
+with the `$DOKU_DOCKER_GIT_SITE` environment variable to a git URL.
+
+Example:
+```bash
+# https
+docker run -e DOKU_DOCKER_GIT_SITE=https://github.com/ComboStrap/site-starter.git
+# ssh
+docker run -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git
+```
+
+### Git: Push mode
+
+In Push mode, you will commit and push changes from your Docker container to your Git Repository.
+
+You can make change online from your server container
+and push them to your git repository.
+
+To make this happen, you need to perform the following configuration:
+* Create a private SSH key and register it in your Git Provider. Example: [GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
+* At the `run` command
+  * Mount the private SSH key with a standard default name (ie for instance `id_ed25519`) in the `~/ssh` directory.
+  * Set the Git URI to an SSH one.; ie `git@github.com:namespace/repo.git`, not `https://`
+```bash
+docker run \
+  -e DOKU_DOCKER_GIT_SITE=git@github.com:namespace/repo.git  
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+* Get into your container / pod
+```bash
+# docker
+docker exec -it containerName bash -l
+# Kubernetes
+kubectl exec -it podName -- bash -l
+kubectl exec -it $(kubectl get pod -l app=appName -o jsonpath='{.items[0].metadata.name}') -- bash -l
+```
+* The Git Author Info are already set to the admin user and email, but you can change them with the following commands:
+```bash
+git config --global user.email "you@example.com"
+git config --global user.name "Your Name"
+```
+* You can now use git as normal and push any changes
+```bash
+git status
+git add .
+git commit -m "My Commit message"
+git push
+```
 
 ## Tag 
 

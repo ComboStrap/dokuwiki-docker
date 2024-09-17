@@ -1,10 +1,24 @@
 #!/bin/bash
 
-# Functions
-dd_echo(){
-  echo "DokuWiki Docker: $1"
+##########################################
+# Standard/Library function
+##########################################
+CLI_NAME=$(basename "$0") # Name of the cli
+
+# Echo a message
+function echo_log() {
+
+  echo -e "$CLI_NAME: ${1:-}"
+
 }
 
+# Print the error message $1
+function echo_err() {
+  RED='\033[0;31m'
+  NC='\033[0m' # No Color
+  #(>&2 echo -e "${RED}$1${NC}")
+  echo_log "${RED}$1${NC}"
+}
 
 if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # flag
@@ -13,10 +27,14 @@ if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
   # E - the ERR trap is inherited by shell functions
   set -Eeuo pipefail
-  dd_echo "Strict Mode"
+  echo_log "Strict Mode"
 else
-  dd_echo "Non-Strict Mode"
+  echo_log "Non-Strict Mode"
 fi;
+
+## A trap on ERR, if set, is executed before the shell exits.
+# Because we show the $LINENO, we can;t create a function otherwise the line number would be not correct
+trap 'echo_err ""; echo_err "Command error on line ($0:$LINENO)"; exit 1' ERR
 
 ################
 # Executing User Env
@@ -65,10 +83,10 @@ done
 
 DOKU_DOCKER_ENV=${DOKU_DOCKER_ENV:-prod}
 if [[ ! -f "$PHP_INI_DIR/php.ini" ]] && [[ "${DOKU_DOCKER_ENV}" != "dev" ]]; then
-  dd_echo "Php Production Mode"
+  echo_log "Php Production Mode"
   mv "$PHP_INI_DIR/php.ini-production" "$PHP_INI_DIR/php.ini"
 else
-  dd_echo "Php Development Mode"
+  echo_log "Php Development Mode"
   mv "$PHP_INI_DIR/php.ini-development" "$PHP_INI_DIR/php.ini"
 fi
 
@@ -79,39 +97,39 @@ fi
 # https://www.dokuwiki.org/install
 export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2024-02-06b}
 
-dd_echo "DokuWiki Availability check (Home: $DOKUWIKI_HOME)"
+echo_log "DokuWiki Availability check (Home: $DOKUWIKI_HOME)"
 if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
 
     # Install is done by downloading
     # Download DokuWiki from the official website or from GitHub
 
-    dd_echo "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
+    echo_log "Dokuwiki not found, installing version ${DOKUWIKI_VERSION} ..."
     DOKUWIKI_ARCHIVE_PATH="/opt/dokuwiki-${DOKUWIKI_VERSION}.tgz"
 
     # Get the archive
     # Last Dokuwiki version is stored in /opt
     DOKUWIKI_ARCHIVE_DOWNLOADED=false
     if [[ ! -f $DOKUWIKI_ARCHIVE_PATH ]]; then
-      dd_echo "  * Download version ${DOKUWIKI_VERSION} ..."
+      echo_log "  * Download version ${DOKUWIKI_VERSION} ..."
       curl --fail -L "https://download.dokuwiki.org/src/dokuwiki/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o "$DOKUWIKI_ARCHIVE_PATH" ||
         curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" -o "$DOKUWIKI_ARCHIVE_PATH"
         DOKUWIKI_ARCHIVE_DOWNLOADED=true
     else
-      dd_echo "  * Version ${DOKUWIKI_VERSION} found in the image"
+      echo_log "  * Version ${DOKUWIKI_VERSION} found in the image"
     fi
 
     # Unzip the archive
     # --no-same-owner option so that the files have root as owner
-    dd_echo "  * Unzipping version ${DOKUWIKI_VERSION} ..."
+    echo_log "  * Unzipping version ${DOKUWIKI_VERSION} ..."
     tar --no-same-owner -xzf "$DOKUWIKI_ARCHIVE_PATH" --strip-components=1
 
     # Clean Up
     if [ $DOKUWIKI_ARCHIVE_DOWNLOADED == "true" ]; then
-        dd_echo "  * Removing the download version ${DOKUWIKI_VERSION} ..."
+        echo_log "  * Removing the download version ${DOKUWIKI_VERSION} ..."
         rm "$DOKUWIKI_ARCHIVE_PATH"
     fi;
 
-    dd_echo "Backup the installed Inter wiki images"
+    echo_log "Backup the installed Inter wiki images"
     # Move the default Inter wiki images to not get them in Git
     INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
     mkdir -p $INTER_WIKI_BACKUP_DIR
@@ -119,7 +137,7 @@ if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
 
 else
 
-  dd_echo "Dokuwiki found, no installation"
+  echo_log "Dokuwiki found, no installation"
 
 fi
 
@@ -135,9 +153,9 @@ fi
 # The path to the dokuwiki data
 export DOKU_DOCKER_SAVE_DIR=${DOKU_DOCKER_SAVE_DIR:-data}
 export DOKUWIKI_SAVE_DIR="$DOKUWIKI_HOME/${DOKU_DOCKER_SAVE_DIR:-data}"
-dd_echo "Dokuwiki Data directory: ($DOKUWIKI_SAVE_DIR)"
+echo_log "Dokuwiki Data directory: ($DOKUWIKI_SAVE_DIR)"
 if [[ "$DOKU_DOCKER_SAVE_DIR" != "data" ]] && [[ ! -d "$DOKUWIKI_SAVE_DIR" ]] && [[ -d "$DOKUWIKI_HOME/data" ]]; then
-  dd_echo "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
+  echo_log "Moving the dokuwiki data directory because (DOKU_DOCKER_DATA_PATH) was set to ($DOKU_DOCKER_SAVE_DIR)"
   mv "$DOKUWIKI_HOME"/data "$DOKUWIKI_SAVE_DIR"
 fi
 
@@ -146,7 +164,7 @@ fi
 #############################################
 DOKUWIKI_PATCH_DIR="$DOKU_DOCKER_HOME/meta/dokuwiki-patches/${DOKUWIKI_VERSION}"
 if [[ -d "$DOKUWIKI_PATCH_DIR" ]]; then
-  dd_echo "Dokuwiki Patch: Copying Patch for version ${DOKUWIKI_VERSION}"
+  echo_log "Dokuwiki Patch: Copying Patch for version ${DOKUWIKI_VERSION}"
   cp -r -f "$DOKUWIKI_PATCH_DIR"/* "$DOKUWIKI_HOME"
 fi
 
@@ -158,10 +176,10 @@ fi
 # DOKU_DOCKER_VERSION=1
 # DOKU_DOCKER_VERSION_FILE=dokuwiki-docker-version
 # if [[ ! -f $DOKU_DOCKER_VERSION_FILE ]] || [ "$(cat $DOKU_DOCKER_VERSION_FILE)" -ne $DOKU_DOCKER_VERSION ]; then
-dd_echo Dokuwiki docker
-dd_echo "  * Copying Dokuwiki docker preload.php"
+echo_log Dokuwiki docker
+echo_log "  * Copying Dokuwiki docker preload.php"
 cp -r -f "$DOKU_DOCKER_HOME"/meta/dokuwiki-conf/preload.php "$DOKUWIKI_HOME/inc/preload.php"
-dd_echo "  * Copying Dokuwiki Docker Status file"
+echo_log "  * Copying Dokuwiki Docker Status file"
 mkdir -p "$DOKUWIKI_HOME/dokuwiki-docker"
 cp -r -f "$DOKU_DOCKER_HOME"/meta/status/* "$DOKUWIKI_HOME/dokuwiki-docker"
 
@@ -173,27 +191,27 @@ DOKU_DOCKER_GIT_SITE=${DOKU_DOCKER_GIT_SITE:-}
 DOKUWIKI_PAGES_DIR=$DOKU_DOCKER_SAVE_DIR/pages
 ROOT_PAGES_COUNT=$(find "$DOKUWIKI_PAGES_DIR" -maxdepth 1 -type f | wc -l)
 if [[ ! -d "$DOKUWIKI_HOME/.git" ]] && [ "$ROOT_PAGES_COUNT" == "0" ]; then
-  dd_echo "No Website installed detected"
+  echo_log "No Website installed detected"
   if [ "$DOKU_DOCKER_GIT_SITE" != "" ]; then
-    dd_echo "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
+    echo_log "Installing WebSite from Git Repo: $DOKU_DOCKER_GIT_SITE"
     comboctl install_site "$DOKU_DOCKER_GIT_SITE"
   else
     ## Install the default website if not disabled
     DOKU_DOCKER_STARTER_SITE=${DOKU_DOCKER_STARTER_SITE:-true}
     if [[ "${DOKU_DOCKER_STARTER_SITE}" != "false" ]]; then
       STARTER_GIT_WEB_SITE=https://github.com/ComboStrap/site-default.git
-      dd_echo "Installing Starter WebSite from Git Repo: $STARTER_GIT_WEB_SITE"
+      echo_log "Installing Starter WebSite from Git Repo: $STARTER_GIT_WEB_SITE"
         comboctl install_site "$STARTER_GIT_WEB_SITE"
         # Remove git
         rm -rf .git
       fi
   fi;
 else
-  dd_echo "No combo website installation because:"
+  echo_log "No combo website installation because:"
   if [ "$ROOT_PAGES_COUNT" != "0" ]; then
-    dd_echo "  * Website detected with $ROOT_PAGES_COUNT pages at the root"
+    echo_log "  * Website detected with $ROOT_PAGES_COUNT pages at the root"
   else
-    dd_echo "  * Git was detected"
+    echo_log "  * Git was detected"
   fi;
 fi
 
@@ -203,8 +221,8 @@ fi
 # We install plugin not with a Site installation
 # because if the dev develops, it may change just the plugins file
 ################
-dd_echo ""
-dd_echo "Plugins installation:"
+echo_log ""
+echo_log "Plugins installation:"
 comboctl install_plugins
 
 ################
@@ -223,7 +241,7 @@ dokuwiki-installer
 export DOKU_DOCKER_ADMIN_NAME=${DOKU_DOCKER_ADMIN_NAME:-admin}
 export DOKU_DOCKER_ADMIN_PASSWORD=${DOKU_DOCKER_ADMIN_PASSWORD:-}
 if [ "$DOKU_DOCKER_ADMIN_PASSWORD" == "" ]; then
-  dd_echo "No admin password found. Deleting phpinfo.php"
+  echo_log "No admin password found. Deleting phpinfo.php"
   # No password set, no phpinfo should be available
   rm dokuwiki-docker/phpinfo.php
   # Random value as the
@@ -241,33 +259,42 @@ DOKU_DOCKER_ADMIN_PASSWORD_BASIC_AUTH=$(caddy hash-password --plaintext "$DOKU_D
 DOKU_DOCKER_SEARCH_INDEX=${DOKU_DOCKER_SEARCH_INDEX:-on}
 if [[ "$DOKU_DOCKER_SEARCH_INDEX" != "off" ]]; then
 
-  dd_echo "Updating search index"
+  echo_log "Updating search index"
   comboctl index
 
 else
-  dd_echo "Automatic Update of search index disabled"
+
+  echo_log "Automatic Update of search index disabled"
+
 fi
 
 ###############
 # Git Config
 ################
-DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-}
-GIT_USER_EMAIL=$(git config --global --get user.email)
-if [ $DOKU_DOCKER_ADMIN_EMAIL != "" ] && [ $GIT_USER_EMAIL == "" ] ; then
-  dd_echo "Git user email configuration set to $DOKU_DOCKER_ADMIN_EMAIL"
-  git config --global user.email "$DOKU_DOCKER_ADMIN_EMAIL"
+echo_log "Git Config"
+if git rev-parse --is-inside-work-tree &>/dev/null; then
+  DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-}
+  GIT_USER_EMAIL=$(git config --global --get user.email)
+  if [ "$DOKU_DOCKER_ADMIN_EMAIL" != "" ] && [ "$GIT_USER_EMAIL" == "" ] ; then
+    echo_log "  * Git user email configuration set to: $DOKU_DOCKER_ADMIN_EMAIL"
+    git config --global user.email "$DOKU_DOCKER_ADMIN_EMAIL"
+  else
+    echo_log "  * Git user email: $GIT_USER_EMAIL"
+  fi
+
+  GIT_USER_NAME=$(git config --global --get user.name)
+  if [ "$GIT_USER_NAME" == "" ]; then
+    GIT_USER_NAME="$DOKU_DOCKER_ADMIN_NAME (Combostrap DokuWiki Docker)"
+    git config --global user.name "$GIT_USER_NAME"
+    echo_log "  * Git user name configuration set to: $DOKU_DOCKER_ADMIN_EMAIL"
+  else
+    echo_log "  * Git user name: $GIT_USER_NAME"
+  fi
 else
-  dd_echo "Git user email: $GIT_USER_EMAIL"
+  echo_log "  * Not ComboStrap Git WebSite detected"
 fi
 
-GIT_USER_NAME=$(git config --global --get user.name)
-if [ $GIT_USER_NAME == "" ]; then
-  GIT_USER_NAME="$DOKU_DOCKER_ADMIN_NAME (Combostrap DokuWiki Docker)"
-  git config --global user.name "$GIT_USER_NAME"
-  dd_echo "Git user name configuration set to $DOKU_DOCKER_ADMIN_EMAIL"
-else
-  dd_echo "Git user name: $GIT_USER_NAME"
-fi
+
 
 # Start
 ################

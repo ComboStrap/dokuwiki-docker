@@ -2,11 +2,11 @@
 # Command utility for Dokuwiki
 
 # flag
-# e - Exit if any error
+# e - Exit if any error (o = errexit)
 # u - Treat unset variables as an error when substituting
 # o pipefail - the return value of a pipeline is the status of the last command to exit with a non-zero status or zero if no command exited with a non-zero status
-# E - the ERR trap is inherited by shell functions
-set -Eeuo pipefail
+# E - (o = errtrace) the ERR trap is inherited by shell functions (ie automatically apply the trap to any subshells or functions that are executed within that script)
+set -u -o pipefail -o errtrace -o errexit
 
 
 ##########################################
@@ -32,9 +32,16 @@ function echo_err() {
 
 function finish() {
   echo_log
-  echo_log "Script terminated\n"
+  echo_log "End of Script"
 }
-trap finish EXIT
+# executed when the shell exit normally or not
+# https://tldp.org/LDP/Bash-Beginners-Guide/html/sect_12_02.html
+trap 'echo_log ""; echo_log "End of Script";' EXIT
+
+
+## A trap on ERR, if set, is executed before the shell exits.
+# Because we show the $LINENO, we can;t create a function otherwise the line number would be not correct
+trap 'echo_err ""; echo_err "Command error on line ($0:$LINENO)"; exit 1' ERR
 
 ######################################
 # Variable Init and Mandatory
@@ -63,8 +70,10 @@ COMBO_SQLITE_PRIMARY="$DOKUWIKI_SAVE_DIR"/meta/combo.sqlite3
 function update_index(){
 
     echo_log "Updating the index"
+
     # If the volume has not enough space, the data sub-directory
     # may have not been created, we create them to not break the search
+    echo_log "  * Creating Dokuwiki directories if they does not exist"
     mkdir -p "$DOKUWIKI_ATTIC_DIR"
     mkdir -p "$DOKUWIKI_CACHE_DIR"
     mkdir -p "$DOKUWIKI_SAVE_DIR/index"
@@ -75,8 +84,13 @@ function update_index(){
     mkdir -p "$DOKUWIKI_META_DIR"
     mkdir -p "$DOKUWIKI_TMP_DIR"
 
+    echo_log "  * Starting Indexing"
     # -q for quiet
-    php "$DOKUWIKI_HOME"/bin/indexer.php -q
+    if ! php "$DOKUWIKI_HOME"/bin/indexer.php -q; then
+      echo_err "  * Indexing failed";
+    else
+      echo_log "  * Indexing succeeded";
+    fi
 
 }
 
