@@ -273,21 +273,34 @@ fi
 ################
 echo_log "Git Config"
 if git rev-parse --is-inside-work-tree &>/dev/null; then
-  DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-}
-  GIT_USER_EMAIL=$(git config --global --get user.email)
-  if [ "$DOKU_DOCKER_ADMIN_EMAIL" != "" ] && [ "$GIT_USER_EMAIL" == "" ] ; then
-    echo_log "  * Git user email configuration set to: $DOKU_DOCKER_ADMIN_EMAIL"
-    git config --global user.email "$DOKU_DOCKER_ADMIN_EMAIL"
+  # Every git command returns an error if a get returns nothing
+  # We therefore add the command as condition
+  if ! git config --global --get user.email &>/dev/null; then
+    DOKU_DOCKER_ADMIN_EMAIL=${DOKU_DOCKER_ADMIN_EMAIL:-}
+    if [ "$DOKU_DOCKER_ADMIN_EMAIL" != "" ] ; then
+      echo_log "  * Git user email configuration set to: $DOKU_DOCKER_ADMIN_EMAIL"
+      git config --global user.email "$DOKU_DOCKER_ADMIN_EMAIL"
+    else
+      echo_log "  * Git user email configuration not set. The env DOKU_DOCKER_ADMIN_EMAIL was missing"
+    fi
   else
+    GIT_USER_EMAIL=$(git config --global --get user.email)
     echo_log "  * Git user email: $GIT_USER_EMAIL"
   fi
 
-  GIT_USER_NAME=$(git config --global --get user.name)
-  if [ "$GIT_USER_NAME" == "" ]; then
-    GIT_USER_NAME="$DOKU_DOCKER_ADMIN_NAME (Combostrap DokuWiki Docker)"
-    git config --global user.name "$GIT_USER_NAME"
-    echo_log "  * Git user name configuration set to: $DOKU_DOCKER_ADMIN_EMAIL"
+  # Every git command returns an error if a get returns nothing
+  # We therefore add the command as condition
+  if ! git config --global --get user.name &>/dev/null; then
+    DOKU_DOCKER_ADMIN_NAME=${DOKU_DOCKER_ADMIN_NAME:-}
+    if [ "$DOKU_DOCKER_ADMIN_NAME" != "" ] ; then
+      GIT_USER_NAME="$DOKU_DOCKER_ADMIN_NAME (Combostrap DokuWiki Docker)"
+      git config --global user.name "$GIT_USER_NAME"
+      echo_log "  * Git user name configuration set to: $GIT_USER_NAME"
+    else
+      echo_log "  * Git user name configuration not set. The env DOKU_DOCKER_ADMIN_NAME was missing"
+    fi
   else
+    GIT_USER_NAME=$(git config --global --get user.name)
     echo_log "  * Git user name: $GIT_USER_NAME"
   fi
 else
