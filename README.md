@@ -260,8 +260,8 @@ All actual possibles configurations can be seen in the [php dokuwiki-docker.ini 
 ### Configure Php-Fpm Pool
 
 Php-Fpm runs 2 pools of threads:
-* `doku` for the pages (ie doku.php)
-* `www` (default) for all other requests (image, media, ...)
+* `doku`: with the highest priority, for the pages and css (ie doku.php and css.php)
+* `www` (default): with the lowest priority, for all other requests (image, media, ...)
 
 
 You can configure them with the following environment variables.
@@ -290,6 +290,8 @@ The environment variables are used in their corresponding files:
 * [Doku pool (pages)](resources/conf/php-fpm/doku.conf)
 * [Default pool (media)](resources/conf/php-fpm/www.conf)
 
+The priority of the pool was set via the `process.priority` php-fpm configuration
+but is no more used because it kills pod to pod communication on Kubernetes.
 
 
 ### Calculate the Memory Capacity Sizing
