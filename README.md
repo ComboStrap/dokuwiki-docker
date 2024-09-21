@@ -9,7 +9,7 @@ Get a Dokuwiki installation with a website in a single line of command.
 
 ## Example: Starter Web Site
 
-To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Starter Site](https://github.com/ComboStrap/site-starter) at http://localhost:8080, execute:
+To get a [Dokuwiki server](https://dokuwiki.org) with the [Combostrap Starter Site](https://github.com/ComboStrap/site-starter) available at http://localhost:8080, execute:
 ```bash
 docker run \
   --name combo-site-starter \
@@ -45,12 +45,12 @@ You got out of the box:
 * [Dev Mode](#set-in-dev-mode)
 * [Proxy Ready](#is-the-docker-image-proxy-ready) (to report the real ip behind a proxy)
 * [Maintenance Ready](#how-to-clean-up-a-dokuwiki-instance-maintenance)
-* [Out-of-Memory error protection with a Dedicated Fetch Processing Pool and max request configuration](#configure-php-fpm-pool)
-* [Crawl/Scan protection](#how-to-define-the-rate-limit-for-pages)
+* [Out-of-Memory error protection with a Dedicated Pages Processing Pool and max request configuration](#configure-php-fpm-pool)
+* [Crawl/Scan protection with rate limiting](#how-to-define-the-rate-limit-for-pages)
 * [Git Ready](#how-to-git) with 2 mode of developments:
   * [Pull Mode](#git-pull-mode---set-your-combostrap-git-website)
   * [Push Mode](#git-push-mode)
-
+* Request Performance
 
 ## How to
 
@@ -105,7 +105,7 @@ docker run \
   -v $PWD:/var/www/html \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
-* On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume-)
+* On Windows, don't bind mount a local directory as volume. See [perf](#poor-windows-perf-with-local-directory-volume)
 
 On a desktop, Dokuwiki would be available at: http://localhost:8081 
 
@@ -131,7 +131,7 @@ docker run \
 
 If you wish to set a healthcheck point, you may use:
 * the dokuwiki ping endpoint `/dokuwiki-docker/ping.php` (ie [ping.php endpoint](resources/dokuwiki-docker/meta/status/ping.php))
-* or the php-fpm endpoint `/php-fpm/doku/ping` (ie to the `ping.path` and `ping.response` [configurations](resources/conf/php-fpm/doku.conf))
+* or the php-fpm endpoint `/php-fpm/doku/ping` (ie to the `ping.path` and `ping.response` [configurations](resources/conf/php-fpm/pages.conf))
 
 Note that:
 * if the [page php-fpm](#configure-php-fpm-pool) is full because there is too much request (bots or visitors), 
@@ -260,38 +260,43 @@ All actual possibles configurations can be seen in the [php dokuwiki-docker.ini 
 ### Configure Php-Fpm Pool
 
 Php-Fpm runs 2 pools of threads:
-* `doku`: with the highest priority, for the pages and css (ie doku.php and css.php)
+* `pages`: with the highest priority, for page rendering (ie doku.php and css.php)
 * `www` (default): with the lowest priority, for all other requests (image, media, ...)
 
 
 You can configure them with the following environment variables.
 ```bash
 # Doku Pool (Pages)
-PHP_FPM_PM_DOKU_MAX_SPARE_SERVERS=2 # the number of thread in idle
-PHP_FPM_PM_DOKU_MAX_CHILDREN=3 # the maximum number of threads
-PHP_FPM_PM_DOKU_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart) 
+PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1 # the minimum number of thread in idle
+PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2 # the maximum number of thread in idle
+PHP_FPM_PM_PAGES_MAX_CHILDREN=3 # the maximum number of threads
+PHP_FPM_PM_PAGES_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart) 
 # WWW Pool (Default, media)
-PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=2
-PHP_FPM_PM_WWW_MAX_CHILDREN=3
+PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
+PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
+PHP_FPM_PM_WWW_MAX_CHILDREN=4
 PHP_FPM_PM_WWW_MAX_REQUESTS=500
 ```
+The pages pool has less thread than the default pool 
+because for one page, you ask much more resources (one or more image, ...).
 
-For instance for the `max.children` number of threads for the `doku` pool, you would need to set the `PHP_FPM_PM_DOKU_MAX_CHILDREN` environment.
+How to use? For instance for the `max.children` number of threads for the `doku` pool, 
+you would need to set the `PHP_FPM_PM_PAGES_MAX_CHILDREN` environment.
 
 To change it from `3` to `4`
 ```bash
-docker run -e PHP_FPM_PM_DOKU_MAX_CHILDREN=4 ....
+docker run -e PHP_FPM_PM_PAGES_MAX_CHILDREN=4 ....
 ```
 
 The pool configuration will result in a low or high memory usage.
 See the [dedicated section](#calculate-the-memory-capacity-sizing)
 
 The environment variables are used in their corresponding files:
-* [Doku pool (pages)](resources/conf/php-fpm/doku.conf)
+* [Doku pool (pages)](resources/conf/php-fpm/pages.conf)
 * [Default pool (media)](resources/conf/php-fpm/www.conf)
 
-The priority of the pool was set via the `process.priority` php-fpm configuration
-but is no more used because it kills pod to pod communication on Kubernetes.
+Note: The priority of the pool was set via the `process.priority` php-fpm configuration
+but is no more used because it kills pod to pod network communication on Kubernetes.
 
 
 ### Calculate the Memory Capacity Sizing
@@ -299,8 +304,8 @@ but is no more used because it kills pod to pod communication on Kubernetes.
 
 Below is an example of a `234Mb` container after a load of 4 bots downloading the whole Combostrap website 
 with the default sizing:
-* 3 [doku threads](#configure-php-fpm-pool)
-* 2 [fetch thread](#configure-php-fpm-pool)
+* 1 [pages threads](#configure-php-fpm-pool)
+* 2 [default thread](#configure-php-fpm-pool)
 ```
 32 MB php-fpm: master process
 37 MB php-fpm: pool doku
@@ -514,6 +519,101 @@ otherwise the client would be the proxy, and you would hit the rate limit pretty
 
 To disable the rate limit, you need to increase the rate limit environment variables.
 
+
+## Performance
+
+### How to report slow requests?
+
+By default, the image will not report any slow request for the [pages](#configure-php-fpm-pool)
+
+You can enable it by setting the environment variable `PHP_FPM_PM_PAGES_REQUEST_SLOWLOG_TIMEOUT` 
+to a period of time.
+
+Example: Setting all pages request above `1s` as slow:
+```bash
+docker run \
+  -e PHP_FPM_PM_PAGES_REQUEST_SLOWLOG_TIMEOUT=1s # ie upper limit of human flow of though
+```
+
+Note:
+  * A value of '0s' means 'off'.
+  * [Php-Fpm request slow log documentation](https://www.php.net/manual/en/install.fpm.configuration.php#request-slowlog-timeout)
+
+The slow request and their trace will be logged into the file `/var/log/php-fpm/pages.slow.log`
+
+### How to install and configure a large wiki
+
+A large wiki is a wiki with a thousand of pages and media.
+
+You will recognize them when the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
+takes a long time to refresh (more than one minute).
+
+Example of a `4.9G` dokuwiki data directory. 
+As you can see the `cache` directory is 12 times bigger than the raw data (ie `pages` and `media`)
+```
+3.5G    ./cache
+285M    ./media
+184M    ./meta
+821M    ./attic
+53M     ./pages
+26M     ./media_attic
+15M     ./index
+5.4M    ./media_meta
+1.5M    ./log
+68K     ./locks
+960K    ./tmp
+```
+
+With a large wiki, you should:
+* [mount a volume](#mount-a-volume):
+  * to speed up the download of your site
+  * to keep the search index between restart
+* [disable search index update](#how-to-disable-the-automatic-update-of-the-search-index)/
+
+Example:
+```bash
+docker run \
+  -e DOKU_DOCKER_SEARCH_INDEX='off' \
+  -v $PWD:/var/www/html \
+  ...
+```
+
+If your data lives in Git, you should consider using [git-lfs](https://git-lfs.com/) to reduce the size of the volume.
+Why ? Because otherwise you get your media (images, ...), not once but twice:
+* in the `.git` directory 
+* and in the working directory (ie `data\media`)
+
+### Poor Windows Perf with Local Directory Volume
+
+On Windows, you should not mount a windows host local directory
+because it will be fucking slow.
+
+ie `DON'T` do that
+```dos
+docker run ^
+  -v c:\home\username\your-site:/var/www/html ^
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+```
+
+Mounting a Windows folder into a Docker container is always slow no matter how you do it.
+WSL2 is even slower than WSL1 in that respect.
+
+See the [related issue](https://github.com/docker/for-win/issues/6742) that explains that this is structural.
+
+The solution is buried into the [Docker WSL best practice](https://docs.docker.com/desktop/wsl/best-practices/)
+```
+It's recommended that you store source code and other data that is bind-mounted into Linux containers.
+``` 
+
+You should then:
+* move the site data into the WSL Distro
+* and from a Linux shell run:
+```bash
+docker run \
+  -v ~\your-site:/var/www/html \
+  ghcr.io/combostrap/dokuwiki:php8.3-latest
+``` 
+
 ## How to Git
 
 `DokuWiki Docker` supports two developments mode with Git:
@@ -523,7 +623,7 @@ To disable the rate limit, you need to increase the rate limit environment varia
 ### Git: Pull Mode - Set your ComboStrap Git WebSite
 
 In this mode, you would:
-* run [DokuWiki Docker locally with a volume mount](#mount-a-volume) 
+* run [DokuWiki Docker locally with a volume mount](#mount-a-volume)
 * push your changes to your Git Repository
 
 
@@ -576,7 +676,9 @@ git commit -m "My Commit message"
 git push
 ```
 
-## Tag 
+## Docker Image
+
+### Docker Tag
 
 We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-image)
 
@@ -591,99 +693,48 @@ where:
 Dokuwiki is installed if not found on the volume.
 See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwiki-version)
 
-### How to install and configure a large wiki
+### Docker Image Components
 
-A large wiki is a wiki with a thousand of pages and media.
-
-You will recognize them when the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
-takes a long time to refresh (more than one minute).
-
-Example of a `4.9G` dokuwiki data directory. 
-As you can see the `cache` directory is 12 times bigger than the raw data (ie `pages` and `media`)
-```
-3.5G    ./cache
-285M    ./media
-184M    ./meta
-821M    ./attic
-53M     ./pages
-26M     ./media_attic
-15M     ./index
-5.4M    ./media_meta
-1.5M    ./log
-68K     ./locks
-960K    ./tmp
-```
-
-With a large wiki, you should:
-* [mount a volume](#mount-a-volume):
-  * to speed up the download of your site
-  * to keep the search index between restart
-* [disable search index update](#how-to-disable-the-automatic-update-of-the-search-index)/
-
-Example:
-```bash
-docker run \
-  -e DOKU_DOCKER_SEARCH_INDEX='off' \
-  -v $PWD:/var/www/html \
-  ...
-```
-
-If your data lives in Git, you should consider using [git-lfs](https://git-lfs.com/) to reduce the size of the volume.
-Why ? Because otherwise you get your media (images, ...), not once but twice:
-* in the `.git` directory 
-* and in the working directory (ie `data\media`)
-
-### Components
-
-All image contains:
+All images contain :
 * [Php-fpm](https://www.php.net/manual/en/install.fpm.php) for php execution
 * [Opcache](https://www.php.net/manual/en/book.opcache.php) for php cache compilation
 * [Caddy](https://caddyserver.com/docs/caddyfile/directives/php_fastcgi) as webserver
 * [Supervisor](http://supervisord.org/) as process manager
 
-### Image List
+### Docker Image List
 
-The list of images is available on [GitHub](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki) 
+The list of Docker images is available on [GitHub](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki)
 
-## Support
-### Poor Windows Perf with Local Directory Volume 
 
-On Windows, you should not mount a windows host local directory
-because it will be fucking slow.
-
-ie `DON'T` do that
-```dos
-docker run ^
-  -v c:\home\username\your-site:/var/www/html ^
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
-```
-
-Mounting a Windows folder into a Docker container is always slow no matter how you do it.
-WSL2 is even slower than WSL1 in that respect.
-
-See the [related issue](https://github.com/docker/for-win/issues/6742) that explains that this is structural.
-
-The solution is buried into the [Docker WSL best practice](https://docs.docker.com/desktop/wsl/best-practices/)
-```
-It's recommended that you store source code and other data that is bind-mounted into Linux containers.
-``` 
-
-You should then:
-* move the site data into the WSL Distro
-* and from a Linux shell run:
-```bash
-docker run \
-  -v ~\your-site:/var/www/html \
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
-```
-
-### How to contribute
+## How to contribute
 
 If you want to contribute to this image, check the [dev page](doc/dev.md)
 that explains how to start the image to develop the script.
  
 
 ## FAQ
+
+### Is the Docker Image Proxy Ready?
+
+Yes. By default, this image will trust all proxy that are in a private range.
+
+ie: `192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
+
+Otherwise, you can set the IP or CIDR of trusted proxy with the `DOKU_DOCKER_TRUSTED_PROXY` environment variable
+```bash
+# example with a Kubernetes CIDR node where the ingress is installed
+DOKU_DOCKER_TRUSTED_PROXY=10.42.1.0/24
+```
+More information on the value can be found in the [trusted-proxy caddy documentation](https://caddyserver.com/docs/caddyfile/options#trusted-proxies)
+
+Note that the `client_ip` is configured to get the value from these headers:
+* `Cf-Connecting-Ip` - Cloudflare Proxy
+* `X-Forwarded-For` - Proxy Protocol
+* `X-Real-IP`
+
+The [Caddy web access log](#where-is-the-web-access-log-file) also reports the `client_ip` and not the `remote_ip` (ie proxy ip)
+
+
 ### Why the volume contains a whole dokuwiki installation
 
 Why the volume contains a whole dokuwiki installation, and we do not use symlink as [the official image](https://github.com/dokuwiki/docker/blob/main/root/build-setup.sh#L29)
@@ -702,25 +753,6 @@ If you want to keep the size low, you need to:
 * perform [cleanup administrative task](https://www.dokuwiki.org/tips:maintenance).
 * or to create a [site](https://combostrap.com/admin/combostrap-website-5gxpcdgy) without any volume.
 
-### Is the Docker Image Proxy Ready?
-
-Yes. By default, this image will trust all proxy that are in a private range.
-
-ie: `192.168.0.0/16 172.16.0.0/12 10.0.0.0/8 127.0.0.1/8 fd00::/8 ::1`
-
-Otherwise, you can set the IP or CIDR of trusted proxy with the `DOKU_DOCKER_TRUSTED_PROXY` environment variable 
-```bash
-# example with a Kubernetes CIDR node where the ingress is installed
-DOKU_DOCKER_TRUSTED_PROXY=10.42.1.0/24
-```
-More information on the value can be found in the [trusted-proxy caddy documentation](https://caddyserver.com/docs/caddyfile/options#trusted-proxies)
-
-Note that the `client_ip` is configured to get the value from these headers:
-* `Cf-Connecting-Ip` - Cloudflare Proxy
-* `X-Forwarded-For` - Proxy Protocol
-* `X-Real-IP`
-
-The [Caddy web access log](#where-is-the-web-access-log-file) also reports the `client_ip` and not the `remote_ip` (ie proxy ip)
 
 
 ### Why my sitemap is not generating URL with https?

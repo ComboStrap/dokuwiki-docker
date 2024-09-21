@@ -159,6 +159,8 @@
 		# The matcher start with a forward slash to match a request path
 		@doku {
 			path /doku.php
+			# On login, there is a post with a redirect that exceed the limits
+			method GET
 		}
 		handle @doku {
 			rate_limit {
@@ -180,6 +182,7 @@
 		@doku-unlimited {
             # We put the CSS and the healthcheck in the doku pool (High priority)
 		    path /lib/exe/css.php /dokuwiki-docker/ping.php
+		    method GET
 		}
 		handle @doku-unlimited {
 			# no rate limit
