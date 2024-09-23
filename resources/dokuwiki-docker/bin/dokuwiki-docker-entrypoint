@@ -61,9 +61,6 @@ DOKU_DOCKER_HOME=/opt/dokuwiki-docker
 # The log directory are not created and just stop supervisor
 # https://github.com/Supervisor/supervisor/issues/120#issuecomment-209292870
 SUPERVISOR_CONF_PATH=${SUPERVISOR_CONF_PATH:-/supervisord.conf}
-LOG_HOME=${LOG_HOME:-/var/log}
-export PHP_ERROR_LOG=${LOG_HOME}/php/error.log
-export CADDY_LOG=${LOG_HOME}/caddy/caddy.log
 LOGS=(
     "$CADDY_LOG"
     "$PHP_ERROR_LOG"

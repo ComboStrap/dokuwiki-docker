@@ -1,0 +1,334 @@
+{
+  "name": "Php-Fpm",
+  "description": null,
+  "permissions": "PUBLIC_READ_WRITE",
+  "pages": [
+    {
+      "name": "Page",
+      "description": null,
+      "widgets": [
+        {
+          "title": "Pages Pool",
+          "layout": {
+            "column": 1,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_idle_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'pages')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_max_active_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'pages')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_active_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'pages')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000 "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Pages Requests and Connections",
+          "layout": {
+            "column": 5,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_accepted_connections) - min(phpfpm_accepted_connections) as 'Accepted Connections'  WHERE ((service IN ({{Service}})) AND (pool = 'pages')) SINCE 15 minutes AGO UNTIL 1 minute  AGO TIMESERIES 1 minutes"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_process_requests) - min(phpfpm_process_requests) as 'Processed Requests'  WHERE ((service IN ({{Service}})) AND (pool = 'pages')) SINCE 15 minutes AGO UNTIL 1 minute  AGO TIMESERIES 1 minutes"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Pages Request Duration",
+          "layout": {
+            "column": 9,
+            "row": 1,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_process_request_duration/1000/1000) where service = {{ Service }} and pool ='pages'  since 15 minutes ago TIMESERIES 1 minute "
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT average(phpfpm_process_request_duration/1000/1000) where service = {{ Service }} and pool ='pages'  since 15 minutes ago TIMESERIES 1 minute "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Default Pool",
+          "layout": {
+            "column": 1,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_idle_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'www')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_max_active_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'www')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "SELECT latest(phpfpm_active_processes) FROM Metric WHERE ((service IN ({{Service}})) AND (pool = 'www')) SINCE 1802 SECONDS AGO UNTIL NOW LIMIT 100 TIMESERIES 30000"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Default Pool Request and Connections",
+          "layout": {
+            "column": 5,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_accepted_connections) - min(phpfpm_accepted_connections) as 'Accepted Connections'  WHERE ((service IN ({{Service}})) AND (pool = 'www')) SINCE 15 minutes AGO UNTIL 1 minute  AGO TIMESERIES 1 minutes"
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_process_requests) - min(phpfpm_process_requests) as 'Process Requests'  WHERE ((service IN ({{Service}})) AND (pool = 'www')) SINCE 15 minutes AGO UNTIL 1 minute  AGO TIMESERIES 1 minutes"
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        },
+        {
+          "title": "Default Request Duration",
+          "layout": {
+            "column": 9,
+            "row": 4,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_process_request_duration/1000/1000) where service = {{ Service }} and pool ='www'  since 15 minutes ago TIMESERIES 1 minute "
+              },
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT average(phpfpm_process_request_duration/1000/1000) where service = {{ Service }} and pool ='www'  since 15 minutes ago TIMESERIES 1 minute  "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "variables": [
+    {
+      "name": "Service",
+      "items": null,
+      "defaultValues": [
+        {
+          "value": {
+            "string": "com-datacadamia"
+          }
+        }
+      ],
+      "nrqlQuery": {
+        "accountIds": [
+          3684987
+        ],
+        "query": "FROM Metric SELECT uniques(service)"
+      },
+      "options": {
+        "ignoreTimeRange": true,
+        "excluded": false
+      },
+      "title": "",
+      "type": "NRQL",
+      "isMultiSelection": false,
+      "replacementStrategy": "STRING"
+    }
+  ]
+}

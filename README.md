@@ -270,13 +270,16 @@ You can configure them with the following environment variables.
 PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1 # the minimum number of thread in idle
 PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2 # the maximum number of thread in idle
 PHP_FPM_PM_PAGES_MAX_CHILDREN=3 # the maximum number of threads
-PHP_FPM_PM_PAGES_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart) 
+PHP_FPM_PM_PAGES_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart)
+PHP_FPM_PM_PAGES_MEMORY_LIMIT=256M # The maximum amount of request memory
 # WWW Pool (Default, media)
 PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
 PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
 PHP_FPM_PM_WWW_MAX_CHILDREN=4
 PHP_FPM_PM_WWW_MAX_REQUESTS=500
+PHP_FPM_PM_WWW_MEMORY_LIMIT=384M
 ```
+
 The pages pool has less thread than the default pool 
 because for one page, you ask much more resources (one or more image, ...).
 
@@ -301,8 +304,16 @@ but is no more used because it kills pod to pod network communication on Kuberne
 
 ### Calculate the Memory Capacity Sizing
 
+The total memory is memory taken by the php code:
+* at rest 
+* at request time 
 
-Below is an example of a `234Mb` container after a load of 4 bots downloading the whole Combostrap website 
+
+#### Memory at rest
+
+Memory at rest is the space taken by all php classes loaded in memory.
+
+Below is an example of a `221Mb` container after a load of 4 bots downloading the whole Combostrap website 
 with the default sizing:
 * 1 [pages threads](#configure-php-fpm-pool)
 * 2 [default thread](#configure-php-fpm-pool)
@@ -319,10 +330,20 @@ You can configure the [maximum number of php-fpm children threads](#configure-ph
 to manage the maximum memory size.
 
 You can count:
-  * 50MB by [thread](#configure-php-fpm-pool)
+  * 40MB by [thread](#configure-php-fpm-pool)
   * 35MB for the master php-fpm thread
   * 60MB for the Caddy web server
   * 30MB for the process controller (supervisor)
+
+#### Memory at request time
+
+The `memory limit` is the memory that the php request will use.
+
+The default value is defined by [pool](#configure-php-fpm-pool):
+* `256Mo` for the pages pool (the [default dokuwiki value](https://github.com/dokuwiki/docker/blob/main/Dockerfile#L12))
+* `384Mo` for the default pool (due to the dokuwiki task runner that needs to load index)
+
+You may increase this values in the [pool configuration](#configure-php-fpm-pool)
 
 ### Test a load
 
@@ -770,6 +791,31 @@ The access log file:
 * is located at `/var/log/caddy/access.log`
 * has the [Apache Common Log format](https://github.com/caddyserver/transform-encoder?tab=readme-ov-file#apache-common-log-format-example)
 * with the real `client_ip` (instead of the `remote_ip`)
+
+## Support
+
+### How to see the fatal errors?
+
+The errors are available:
+* in the file: `/var/log/php/error.log`
+* and in the docker logs
+
+
+### What if the taskrunner takes a long time to run?
+
+The taskrunner task may take up to 5 seconds to run because
+we try to get a lock.
+
+If this behaviour is continuous, it's possible that there is a memory problem.
+You may confirm that by looking at the [error logs](#how-to-see-the-fatal-errors)
+
+For [large wiki](#how-to-install-and-configure-a-large-wiki), you may want to
+increase the [memory of the default pool](#configure-php-fpm-pool) to `512Mo.
+
+```bash
+docker run \
+  -e PHP_FPM_PM_WWW_MEMORY_LIMIT=512M
+```
 
 
 ## Other related projects

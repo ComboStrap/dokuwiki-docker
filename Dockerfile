@@ -123,8 +123,9 @@ ADD resources/conf/supervisor/supervisord.conf /supervisord.conf
 # otherwise we get `Warning: PHP Startup: Invalid date.timezone value ''`
 ENV PHP_UPLOAD_MAX_FILESIZE="128M"
 ENV PHP_POST_MAX_SIZE="128M"
-ENV PHP_MEMORY_LIMIT="256M"
 ENV PHP_DATE_TIMEZONE="UTC"
+# Log is needed to pass it to the supervisor
+ENV PHP_ERROR_LOG=/var/log/php/error.log
 ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-docker.ini
 
 #### Php-fpm
@@ -140,12 +141,14 @@ ENV PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
 ENV PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
 ENV PHP_FPM_PM_WWW_MAX_CHILDREN=4
 ENV PHP_FPM_PM_WWW_MAX_REQUESTS=500
+ENV PHP_FPM_PM_WWW_MEMORY_LIMIT=384M
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
 # Pages Pool
 ENV PHP_FPM_PM_PAGES_MIN_SPARE_SERVERS=1
 ENV PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2
 ENV PHP_FPM_PM_PAGES_MAX_CHILDREN=3
 ENV PHP_FPM_PM_PAGES_MAX_REQUESTS=500
+ENV PHP_FPM_PM_WWW_MEMORY_LIMIT=256M
 ENV PHP_FPM_PM_PAGES_REQUEST_SLOWLOG_TIMEOUT=0
 ADD --chmod=0644 resources/conf/php-fpm/pages.conf /usr/local/etc/php-fpm.d/
 RUN mkdir -p /var/log/php-fpm && chmod 0777 /var/log/php-fpm
@@ -157,6 +160,8 @@ RUN chmod 0777 /var/log # Gives permission to the running user to create log
 RUN chmod 0777 /usr/local/etc/php # Gives permission to the running user to create php ini file
 #### Caddy
 EXPOSE 80
+# Log is needed to pass it to the supervisor
+ENV CADDY_LOG=/var/log/caddy/caddy.log
 RUN mkdir $XDG_CONFIG_HOME/caddy && chmod 0777 $XDG_CONFIG_HOME/caddy # Gives permission to the running user to create files in it
 COPY resources/conf/caddy/Caddyfile $XDG_CONFIG_HOME/caddy/Caddyfile
 # Trusted proxy caddy configuration
