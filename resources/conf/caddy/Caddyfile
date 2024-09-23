@@ -116,7 +116,7 @@
 					env SCRIPT_NAME /status
 				}
 			}
-			reverse_proxy /php-fpm/doku/status 127.0.0.1:9001 {
+			reverse_proxy /php-fpm/pages/status 127.0.0.1:9001 {
 				transport fastcgi {
 					env SCRIPT_NAME /status
 				}

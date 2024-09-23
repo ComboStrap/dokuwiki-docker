@@ -382,7 +382,7 @@ function monitor() {
 function php_fpm_status(){
 
 
-  PHP_FPM_ENDPOINT_PATHS=("/php-fpm/doku/status" "/php-fpm/www/status")
+  PHP_FPM_ENDPOINT_PATHS=("/php-fpm/pages/status" "/php-fpm/www/status")
   while true; do
     for PHP_FPM_ENDPOINT_PATH  in "${PHP_FPM_ENDPOINT_PATHS[@]}"; do
       local URL="http://localhost$PHP_FPM_ENDPOINT_PATH"
