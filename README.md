@@ -319,7 +319,7 @@ You may increase this values in the [pool configuration](#configure-php-fpm-pool
 
 They are maximum, the memory used on a request by request basis are way lower (between 2 and 12M).
 
-![Request memory](resources/monitoring-graphs/monitoring-request-duration-vignette.jpg)
+![Request memory](resources/monitoring-graphs/monitoring-request-memory-vignette.png)
 
 ### Test a load
 
