@@ -243,13 +243,13 @@ PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1 # the minimum number of thread in idle
 PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2 # the maximum number of thread in idle
 PHP_FPM_PM_PAGES_MAX_CHILDREN=3 # the maximum number of threads
 PHP_FPM_PM_PAGES_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart)
-PHP_FPM_PM_PAGES_MEMORY_LIMIT=256M # The maximum amount of request memory
+PHP_FPM_PM_PAGES_MEMORY_LIMIT=128M # The maximum amount of request memory (the php default)
 # WWW Pool (Default, media)
 PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
 PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
 PHP_FPM_PM_WWW_MAX_CHILDREN=4
 PHP_FPM_PM_WWW_MAX_REQUESTS=500
-PHP_FPM_PM_WWW_MEMORY_LIMIT=384M
+PHP_FPM_PM_WWW_MEMORY_LIMIT=384M # 384 and not 128 because of the taskrunner indexing 
 ```
 
 The pages pool has less thread than the default pool 
@@ -312,10 +312,14 @@ You can count:
 The `memory limit` is the memory that the php request will use.
 
 The default value is defined by [pool](#configure-php-fpm-pool):
-* `256Mo` for the pages pool (the [default dokuwiki value](https://github.com/dokuwiki/docker/blob/main/Dockerfile#L12))
+* `128Mo` for the pages pool (the [default dokuwiki value is 256M](https://github.com/dokuwiki/docker/blob/main/Dockerfile#L12))
 * `384Mo` for the default pool (due to the dokuwiki task runner that needs to load index)
 
 You may increase this values in the [pool configuration](#configure-php-fpm-pool)
+
+They are maximum, the memory used on a request by request basis are way lower (between 2 and 12M).
+
+![Request memory](resources/monitoring-graphs/monitoring-request-duration-vignette.jpg)
 
 ### Test a load
 
