@@ -36,9 +36,6 @@ You got out of the box:
 * [Automatic Search Index Update](#how-to-disable-the-automatic-update-of-the-search-index)
 * [Automatic Plugins Installation](https://combostrap.com/admin/combostrap-website-yolv2qw6#plugins)
 * SEO Ready: [SiteMap Enabled by default to 5 days](https://combostrap.com/seo/combostrap-seo-sitemap-saio2v87#enable)
-* Performance:
-  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
-  * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
 * [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
 * [Metrics Endpoint](#how-to-monitor-dokuwiki-docker)
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
@@ -50,7 +47,12 @@ You got out of the box:
 * [Git Ready](#how-to-git) with 2 mode of developments:
   * [Pull Mode](#git-pull-mode---set-your-combostrap-git-website)
   * [Push Mode](#git-push-mode)
-* Request Performance
+* Request Performance:
+  * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
+  * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
+  * [Pages and Media Thread Pool](#configure-php-fpm-pool)
+
+![monitoring request duration graph](resources/monitoring-graphs/monitoring-request-duration-vignette.jpg)
 
 ## How to
 
