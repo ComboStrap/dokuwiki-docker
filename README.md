@@ -317,9 +317,11 @@ The default value is defined by [pool](#configure-php-fpm-pool):
 
 You may increase this values in the [pool configuration](#configure-php-fpm-pool)
 
-They are maximum, the memory used on a request by request basis are way lower (between 2 and 12M).
+They are maximum, the memory used on a request by request basis are way lower (between 2 and 30M).
 
 ![Request memory](resources/monitoring-graphs/monitoring-request-memory-vignette.png)
+
+Why? Because dokuwiki loads the images and index in memory for processing.
 
 ### Test a load
 
