@@ -50,7 +50,9 @@ You got out of the box:
 * Request Performance:
   * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
   * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
-  * [Pages and Media Thread Pool](#configure-php-fpm-pool)
+  * [Pages and Media Thread Pool](#configure-php-fpm-pool) - dedicated pool separated between pages and media requests 
+
+Max and average request durations of [Combostrap](https://combostrap.com) from the [monitoring dashboard](#monitoring-php-fpm-dashboard)
 
 ![monitoring request duration graph](resources/monitoring-graphs/monitoring-request-duration-vignette.jpg)
 
