@@ -546,6 +546,8 @@ With a large wiki, you should:
 * [mount a volume](#mount-a-volume):
   * to speed up the download of your site
   * to keep the search index between restart
+* [increase the default memory limit of the default pool](#configure-php-fpm-pool)
+  * to avoid the [memory error on index building of the task runner](#what-if-the-taskrunner-takes-a-long-time-to-run) 
 * [disable search index update](#how-to-disable-the-automatic-update-of-the-search-index)/
 
 Example:
