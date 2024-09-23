@@ -300,6 +300,47 @@
               "zero": true
             }
           }
+        },
+        {
+          "title": "Request Memory By Pool",
+          "layout": {
+            "column": 1,
+            "row": 7,
+            "width": 4,
+            "height": 3
+          },
+          "linkedEntityGuids": null,
+          "visualization": {
+            "id": "viz.line"
+          },
+          "rawConfiguration": {
+            "facet": {
+              "showOtherSeries": false
+            },
+            "legend": {
+              "enabled": true
+            },
+            "nrqlQueries": [
+              {
+                "accountIds": [
+                  3684987
+                ],
+                "query": "FROM Metric SELECT max(phpfpm_process_last_request_memory) where service = {{ Service }} SINCE 15 minutes ago FACET pool TIMESERIES 1 minute "
+              }
+            ],
+            "platformOptions": {
+              "ignoreTimeRange": false
+            },
+            "thresholds": {
+              "isLabelVisible": true
+            },
+            "yAxisLeft": {
+              "zero": true
+            },
+            "yAxisRight": {
+              "zero": true
+            }
+          }
         }
       ]
     }

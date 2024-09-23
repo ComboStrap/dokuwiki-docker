@@ -40,7 +40,7 @@ You got out of the box:
   * [Php Fpm](https://www.php.net/manual/en/install.fpm.php) - php instance pooling
   * [OpCache](https://www.php.net/manual/en/book.opcache.php) - php compilation cache
 * [Healthcheck Endpoint](#get-healthcheck--liveness--probes--container-state)
-* [Metrics Endpoint](#monitor-php-fpm-with-status-on-localhost-only)
+* [Metrics Endpoint](#how-to-monitor-dokuwiki-docker)
 * [Last Patches](resources/dokuwiki-docker/meta/dokuwiki-patches)
 * [Dev Mode](#set-in-dev-mode)
 * [Proxy Ready](#is-the-docker-image-proxy-ready) (to report the real ip behind a proxy)
@@ -185,38 +185,6 @@ containers:
 
 
 
-### Monitor php-fpm with status on localhost only
-
-Example: 
-```bash
-# Doku Pool (Pages)
-docker exec -ti combo-site-starter curl localhost/php-fpm/doku/status?full
-# Default Pool (Media)
-docker exec -ti combo-site-starter curl localhost/php-fpm/www/status?full
-```
-```
-pool:                 doku
-process manager:      dynamic
-start time:           07/Aug/2024:14:04:53 +0000
-start since:          173
-accepted conn:        21
-listen queue:         0
-max listen queue:     0
-listen queue len:     4096
-idle processes:       1
-request method:       GET
-request URI:          /php-fpm/doku/status?full
-content length:       0
-user:                 -
-script:               /var/www/html
-last request cpu:     0.00
-last request memory:  0
-```
-
-The status endpoint is available only from localhost (ie ip 127.0.0.1) for security reason
-therefore you need to run it via `docker exec`
-
-For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
 
 ### Disable Automatic Default Starter WebSite Installation
 
@@ -423,7 +391,7 @@ docker run \
 
 Note: You can change the `dokudata` value to whatever you want.
 
-### Update the image
+### Update the Docker image
 
 We support for now only one tag by php version, therefore you need to delete the image before pulling it again
 
@@ -507,21 +475,6 @@ The dedicated [Dokuwiki Web Page on maintenance](https://www.dokuwiki.org/tips:m
 information on this topic.
 
 
-### How to debug a crashing container
-
-By default, in production mode, we don't allow any error to occur otherwise the script terminate.
-
-If you want to allow the container to get up, you need to set:
-* strict to `false`
-* eventually disable the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
-
-Example:
-```bash
-docker run \
-  -e DOKU_DOCKER_STRICT=false \
-  -e DOKU_DOCKER_SEARCH_INDEX='off'
-  ....
-```
 
 ### How to define the rate limit for pages?
 
@@ -697,11 +650,93 @@ git commit -m "My Commit message"
 git push
 ```
 
+## How to monitor DokuWiki Docker
+
+You can get the php-fpm metrics on the [status page](https://www.php.net/manual/en/fpm.status.php)
+for the [2 pools](#configure-php-fpm-pool) at:
+* `localhost/php-fpm/pages/status` for the `pages` pool
+* `localhost/php-fpm/www/status` for the `default` pool
+
+You can extract them
+* via curl
+* via an Prometheus exporter
+
+And [graph them](#monitoring-php-fpm-dashboard)
+
+
+
+### Monitoring php-fpm with Curl
+
+Example:
+```bash
+# Pages Pool
+docker exec -ti combo-site-starter curl localhost/php-fpm/pages/status?full
+# Default Pool (Media, Task Runner...)
+docker exec -ti combo-site-starter curl localhost/php-fpm/www/status?full
+```
+```
+pool:                 doku
+process manager:      dynamic
+start time:           07/Aug/2024:14:04:53 +0000
+start since:          173
+accepted conn:        21
+listen queue:         0
+max listen queue:     0
+listen queue len:     4096
+idle processes:       1
+request method:       GET
+request URI:          /php-fpm/doku/status?full
+content length:       0
+user:                 -
+script:               /var/www/html
+last request cpu:     0.00
+last request memory:  0
+```
+
+The status endpoint is available only from localhost (ie ip 127.0.0.1) for security reason
+therefore you need to run it via `docker exec`
+
+For the documentation over the data and usage, see the [configuration file](resources/conf/php-fpm/www.conf)
+
+### Monitoring php-fpm with Prometheus
+
+You can use the [HiPages php-fpm_exporter](https://github.com/hipages/php-fpm_exporter)
+to collect the metrics.
+
+Example as side container in Kubernetes.
+```yaml
+initContainers:
+  - name: php-fpm-exporter
+    image: hipages/php-fpm_exporter:2.2.0
+    restartPolicy: Always
+    env:
+      - name: PHP_FPM_SCRAPE_URI
+        value: "tcp://127.0.0.1:9000/status,tcp://127.0.0.1:9001/status"
+      - name: PHP_FPM_FIX_PROCESS_COUNT
+        value: "1"
+    ports:
+      - containerPort: 9253
+```
+
+### Monitoring php-fpm Dashboard
+
+We have created a [new relic](https://newrelic.com) dashboard
+that you can get [here](resources/monitoring-graphs/new_relic_dashboard.json).
+
+It's based on:
+* the [prometheus exporter metrics](#monitoring-php-fpm-with-prometheus)
+* a `service` label that contains the name of your Combostrap Dokuwiki Docker instance. The [kubernetes prometheus operator](https://prometheus-operator.dev/) add it automatically
+
+
+Example of graph: the max and average request durations of https://combostrap.com
+
+![monitoring request duration graph](resources/monitoring-graphs/monitoring-request-duration-vignette.jpg)
+
 ## Docker Image
 
 ### Docker Tag
 
-We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-image)
+We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-docker-image)
 
 ```bash
 php8.3-latest
@@ -793,6 +828,22 @@ The access log file:
 * with the real `client_ip` (instead of the `remote_ip`)
 
 ## Support
+
+### How to debug a crashing container
+
+By default, in production mode, we don't allow any error to occur otherwise the script terminate.
+
+If you want to allow the container to get up, you need to set:
+* strict to `false`
+* eventually disable the [search index update](#how-to-disable-the-automatic-update-of-the-search-index)
+
+Example:
+```bash
+docker run \
+  -e DOKU_DOCKER_STRICT=false \
+  -e DOKU_DOCKER_SEARCH_INDEX='off'
+  ....
+```
 
 ### How to see the fatal errors?
 
