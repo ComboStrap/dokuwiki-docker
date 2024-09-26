@@ -332,6 +332,14 @@ function dokuwiki_usage(){
 
 }
 
+
+function sync_metadata_to_database() {
+    COMMAND="php ./bin/plugin.php combo metadata-to-database --host ${FQDN} --port 80 /"
+    echo "$COMMAND"
+    eval "$COMMAND"
+}
+
+
 function print_usage() {
 
   echo ""
@@ -345,6 +353,7 @@ function print_usage() {
   echo "     * install_site   GitUrl  - install a combo site"
   echo "     * install_plugins        - install the plugins of a combo site"
   echo "     * cleanup                - maintenance script to cleanup the wiki"
+  echo "     * sync                   - sync pages meta to the database"
   echo "     * help                   - this help"
   echo ""
 
@@ -409,6 +418,9 @@ cleanup)
   ;;
 du)
   dokuwiki_usage
+  ;;
+sync)
+  sync_metadata_to_database
   ;;
 help)
   print_usage
