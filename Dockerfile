@@ -172,7 +172,7 @@ ENV DOKU_DOCKER_PAGES_RATE_LIMIT_WINDOW=1s
 #### Bash (to get the same env with `docker exec bash -l`)
 # When bash initializes a non-login interactive bash shell on a Debian/Ubuntu-like system,
 # the shell first reads /etc/bash.bashrc and then reads ~/.bashrc.
-ADD --chmod=0755 resources/conf/bash/bash.bashrc /etc/bash.bashrc
+ADD --chmod=0755 resources/conf/bash-profile.d/* /etc/profile.d
 ### Third User
 RUN chmod 0777 /home # Gives permission to the running user to create its own HOME
 

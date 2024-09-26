@@ -48,7 +48,7 @@ docker run \
   -v $PWD/resources/dokuwiki-installer:/opt/dokuwiki-installer \
   -v $PWD/resources/comboctl:/opt/comboctl \
   -v $PWD/resources/phpctl:/opt/phpctl \
-  -v $PWD/resources/conf/bash/bash.bashrc:/etc/bash.bashrc \
+  -v $PWD/resources/conf/bash-profile.d:/etc/profile.d \
   -v $PWD/resources/conf/caddy/Caddyfile:/etc/caddy/Caddyfile \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```

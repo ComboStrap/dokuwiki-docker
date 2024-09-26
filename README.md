@@ -382,7 +382,7 @@ docker exec -ti combo-site-starter bash
 ```
 
 Note that you get the same environment as the running container
-thanks to the [bash.bashrc](resources/conf/bash/bash.bashrc) located at `/etc/bash.bashrc`.
+thanks to the [bash.bashrc](resources/conf/bash-profile.d/user.sh) located at `/etc/bash.bashrc`.
 
 ### Change the savedir configuration
 
@@ -882,6 +882,24 @@ increase the [memory of the default pool](#configure-php-fpm-pool) to `512Mo.
 ```bash
 docker run \
   -e PHP_FPM_PM_WWW_MEMORY_LIMIT=512M
+```
+
+### What if I get the Git error `Host key verification failed`
+
+This error comes from Git when it invokes `SSH` to connect to your [Git repository](#how-to-git)
+
+
+By default, `SSH` will check if the target host is trusted by searching it in the `~/.ssh/known_hosts` file.
+If it can find it, `SSH` returns the error `Host key verification failed.`
+
+By default, we update the `known_hosts` at startup with the GitHub hosts via the [ssh known host updater](resources/conf/bash-profile.d/ssh.sh).
+
+If you want to connect to other git provider, you can:
+* mount your own `~/.ssh/known_hosts` file
+* or set the environment variable `GIT_SSH_COMMAND` with the less strict HostKey checking option. Example:
+```bash
+docker \
+ -e GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
 ```
 
 
