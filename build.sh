@@ -8,7 +8,7 @@ set -Eeuo pipefail
 VERSION=php8.3-latest
 
 # Build or exit
-docker build . -t ghcr.io/combostrap/dokuwiki:"$VERSION" # || exit 1
+docker build . --progress=plain -t ghcr.io/combostrap/dokuwiki:"$VERSION" # || exit 1
 
 
 # Run. See README

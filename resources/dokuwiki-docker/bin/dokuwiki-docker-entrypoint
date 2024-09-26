@@ -1,5 +1,15 @@
 #!/bin/bash
 
+################
+# Executing User Env
+# The env is by default set for the Dockerfile user (ie root)
+# When the image is run for the desktop/host user
+# We recreate the same environment
+################
+# All environments
+. /etc/profile
+
+
 if [[ "${DOKU_DOCKER_STRICT}" != "false" ]]; then
   # flag
   # e - Exit if any error
@@ -12,19 +22,15 @@ else
   echo_info "Non-Strict Mode"
 fi;
 
-################
-# Executing User Env
-# The env is by default set for the Dockerfile user (ie root)
-# When the image is run for the desktop/host user
-# We recreate the same environment
-################
-# All environments
-. /etc/profile
 
 ################
 # SSH
 ################
-ssh_known_hosts_update
+KNOWN_HOST=$HOME/.ssh/known_hosts
+if [ ! -f "$KNOWN_HOST" ]; then
+  echo_info "Known Hosts file $KNOWN_HOST not found: updating"
+  ssh_known_hosts_update
+fi
 
 #############################################
 # Script
@@ -201,6 +207,7 @@ fi
 ################
 echo_info ""
 echo_info "Plugins installation:"
+echo_info Path is "$PATH"
 comboctl install_plugins
 
 ################

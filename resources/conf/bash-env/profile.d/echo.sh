@@ -1,15 +1,16 @@
 #!/bin/bash
 
 # Get the directory of the current script
-SCRIPT_DIR=$(dirname "$0")
-source "$SCRIPT_DIR"/color
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+source "$SCRIPT_DIR"/color.sh
 
 
 function cli_name(){
-  CLI_NAME="bash"
-  if [ "$0" != "-bash" ]; then
-    CLI_NAME=$(basename "$0") # Name of the cli
-  fi
+  # caller return the line, the function and the script
+  # example: 10 main /opt/dokuwiki-docker/bin/dokuwiki-docker-entrypoint
+  CALLING_SCRIPT=$(caller 1 | awk '{print $3}')
+  # Name of the calling script
+  CLI_NAME=$(basename "$CALLING_SCRIPT")
   echo "$CLI_NAME"
 }
 

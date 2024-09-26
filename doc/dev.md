@@ -33,24 +33,7 @@ chmod +755 resources/dokuctl/bin/*
 ```
 * Then run:
 ```bash
-docker run \
-  --name dd \
-  --rm \
-  -p 8085:80 \
-  --user 1000:1000 \
-  -e DOKU_DOCKER_STRICT=true \
-  -e DOKU_DOCKER_ENV=dev \
-  -e DOKU_DOCKER_STARTER_SITE=false \
-  -e DOKU_DOCKER_ACL_POLICY='public' \
-  -e DOKU_DOCKER_ADMIN_NAME='admin' \
-  -e DOKU_DOCKER_ADMIN_PASSWORD='welcome' \
-  -v $PWD/resources/dokuwiki-docker:/opt/dokuwiki-docker \
-  -v $PWD/resources/dokuwiki-installer:/opt/dokuwiki-installer \
-  -v $PWD/resources/comboctl:/opt/comboctl \
-  -v $PWD/resources/phpctl:/opt/phpctl \
-  -v $PWD/resources/conf/bash-profile.d:/etc/profile.d \
-  -v $PWD/resources/conf/caddy/Caddyfile:/etc/caddy/Caddyfile \
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
+start
 ```
 * Then connect with bash
 ```bash

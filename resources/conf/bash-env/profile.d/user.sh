@@ -1,5 +1,6 @@
 #!/bin/bash
 
+
 # This script is called by `/etc/profile`
 # Run on non-interactive, ie when the terminal starts
 
@@ -9,7 +10,7 @@
 # umask 022
 USER_UID=$(id -u)
 USER_NAME=$(whoami 2> /dev/null || echo 'noname')
-echo_info "bash.bashrc: User: $USER_NAME, UID: $USER_UID, GID: $(id -g)"
+echo_info "User: $USER_NAME, UID: $USER_UID, GID: $(id -g)"
 if [ "$HOME" == '/' ] && [ "$USER_UID" != '0' ]; then
   # to avoid error with the HOME directory
   # such as `error: could not lock config file //.gitconfig: Permission denied`

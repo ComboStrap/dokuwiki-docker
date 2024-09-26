@@ -382,7 +382,7 @@ docker exec -ti combo-site-starter bash
 ```
 
 Note that you get the same environment as the running container
-thanks to the [bash.bashrc](resources/conf/bash-profile.d/user.sh) located at `/etc/bash.bashrc`.
+thanks to the [bash.bashrc](resources/conf/bash-env/profile.d/user.sh) located at `/etc/bash.bashrc`.
 
 ### Change the savedir configuration
 
@@ -892,7 +892,7 @@ This error comes from Git when it invokes `SSH` to connect to your [Git reposito
 By default, `SSH` will check if the target host is trusted by searching it in the `~/.ssh/known_hosts` file.
 If it can find it, `SSH` returns the error `Host key verification failed.`
 
-By default, we update the `known_hosts` at startup with the GitHub hosts via the [ssh known host updater](resources/conf/bash-profile.d/ssh.sh).
+By default, we update the `known_hosts` at startup with the GitHub hosts via the [ssh known host updater](resources/conf/bash-env/profile.d/ssh.sh).
 
 If you want to connect to other git provider, you can:
 * mount your own `~/.ssh/known_hosts` file
@@ -901,6 +901,7 @@ If you want to connect to other git provider, you can:
 docker \
  -e GIT_SSH_COMMAND="ssh -o StrictHostKeyChecking=accept-new"
 ```
+
 
 
 ## Other related projects
