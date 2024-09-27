@@ -1,10 +1,10 @@
-#!/usr/bin/env bash
+#!/bin/bash
 # Exit immediately if a command exits with a non-zero status
 set -Eeuo pipefail
 
 
 # Build or exit
-docker build . --progress=plain -t \
+docker build . -t \
   "${DOCKER_REGISTRY:-docker.io}"/"${DOCKER_USER}"/"${DOCKER_REPO}":"$DOCKER_TAG"
 
 
