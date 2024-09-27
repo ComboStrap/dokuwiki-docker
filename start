@@ -21,4 +21,4 @@ docker run \
   -v "$PWD"/resources/phpctl:/opt/phpctl \
   -v "$PWD"/resources/conf/bash-env/profile.d:/etc/profile.d \
   -v "$PWD"/resources/conf/caddy/Caddyfile:/etc/caddy/Caddyfile \
-  ghcr.io/combostrap/dokuwiki:php8.3-latest
+  "${DOCKER_REGISTRY:-docker.io}"/"${DOCKER_USER}"/"${DOCKER_REPO}":"$DOCKER_TAG"

@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+# Exit immediately if a command exits with a non-zero status
+set -Eeuo pipefail
+
+# Push
+docker push "${DOCKER_REGISTRY:-docker.io}"/"${DOCKER_USER}"/"${DOCKER_REPO}":"$DOCKER_TAG"

@@ -4,11 +4,11 @@
 ## How to develop the Docker image
 
 * Change the [Dockerfile](../Dockerfile)
-* [Build](../build.sh)
+* [Build](../build)
 ```bash
 /build.sh
 ```
-* [Push](../push.sh) if satisfied
+* [Push](../push) if satisfied
 ```bash
 ./push.sh
 ```
@@ -20,7 +20,7 @@
 ```bash
 cd ~/code/dokuwiki-docker
 ```
-* Use the [last build](../build.sh) as some script need Dokuwiki scripts
+* Use the [last build](../build) as some script need Dokuwiki scripts
 ```bash
 ./build.sh
 ```
