@@ -36,3 +36,6 @@ echo_success() {
 echo_warning() {
     echo_info -e "${YELLOW}Warning: $1${NC}"
 }
+
+export -f echo_info
+export -f echo_err
