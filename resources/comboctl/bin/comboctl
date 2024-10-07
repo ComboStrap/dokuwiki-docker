@@ -86,8 +86,11 @@ function update_index(){
 
     echo_log "  * Starting Indexing"
     # -q for quiet
+    # -c for clear (but not yet implemented)
     if ! php "$DOKUWIKI_HOME"/bin/indexer.php -q; then
       echo_err "  * Indexing failed";
+      # We failed because the website is not usable
+      return 1;
     else
       echo_log "  * Indexing succeeded";
     fi
