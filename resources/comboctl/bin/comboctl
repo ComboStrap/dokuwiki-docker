@@ -381,7 +381,6 @@ for arg in "$@"; do
   case "$arg" in
   --*)
     OPTIONS+=("$arg")
-    shift
     ;;
   *)
     # Command or arg
@@ -392,7 +391,6 @@ for arg in "$@"; do
         echo_log "Argument ($arg) found"
         ARGUMENTS+=("$arg")
     fi
-    shift
     ;;
   esac
 done

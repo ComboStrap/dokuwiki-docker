@@ -4,13 +4,13 @@
 ## How to develop the Docker image
 
 * Change the [Dockerfile](../Dockerfile)
-* [Build](../build)
+* Build
 ```bash
-/build.sh
+dockenv build
 ```
-* [Push](../push) if satisfied
+* Push if satisfied
 ```bash
-./push.sh
+dockenv push
 ```
 
 
@@ -20,9 +20,9 @@
 ```bash
 cd ~/code/dokuwiki-docker
 ```
-* Use the [last build](../build) as some script need Dokuwiki scripts
+* Use the last build as some script need Dokuwiki scripts
 ```bash
-./build.sh
+dockenv build
 ```
 * Give execution permissions on your desktop to the scripts
 ```bash
@@ -33,11 +33,11 @@ chmod +755 resources/dokuctl/bin/*
 ```
 * Then run:
 ```bash
-start
+dokuwiki-docker-run
 ```
 * Then connect with bash
 ```bash
-docker exec -ti dd bash
+dockenv shell
 ```
 * Change 
   * the scripts and rerun them
