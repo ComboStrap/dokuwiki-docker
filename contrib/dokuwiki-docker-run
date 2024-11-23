@@ -4,7 +4,7 @@ set -euo pipefail
 
 # Set -e DOKU_DOCKER_STRICT=false to debug
 
-dockenv run \
+dock-x run \
   -e DOKU_DOCKER_STRICT=true \
   -e DOKU_DOCKER_ENV=dev \
   -e DOKU_DOCKER_STARTER_SITE=true \
