@@ -137,15 +137,15 @@ ADD resources/conf/php/dokuwiki-docker.ini /usr/local/etc/php/conf.d/dokuwiki-do
 # List: https://www.php.net/manual/en/install.fpm.configuration.php
 ADD --chmod=0644 resources/conf/php-fpm/php-fpm.conf /usr/local/etc/
 # Default (Image, Fetch, ...) Pool
-ENV PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
-ENV PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
+ENV PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=1
+ENV PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=1
 ENV PHP_FPM_PM_WWW_MAX_CHILDREN=4
 ENV PHP_FPM_PM_WWW_MAX_REQUESTS=500
 ENV PHP_FPM_PM_WWW_MEMORY_LIMIT=128M
 ADD --chmod=0644 resources/conf/php-fpm/www.conf /usr/local/etc/php-fpm.d/
 # Pages Pool
 ENV PHP_FPM_PM_PAGES_MIN_SPARE_SERVERS=1
-ENV PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2
+ENV PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1
 ENV PHP_FPM_PM_PAGES_MAX_CHILDREN=3
 ENV PHP_FPM_PM_PAGES_MAX_REQUESTS=500
 ENV PHP_FPM_PM_PAGES_MEMORY_LIMIT=256M

@@ -239,14 +239,14 @@ Php-Fpm runs 2 pools of threads:
 You can configure them with the following environment variables.
 ```bash
 # Doku Pool (Pages)
-PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1 # the minimum number of thread in idle
-PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=2 # the maximum number of thread in idle
+PHP_FPM_PM_PAGES_MIN_SPARE_SERVERS=1 # the minimum number of thread in idle
+PHP_FPM_PM_PAGES_MAX_SPARE_SERVERS=1 # the maximum number of thread in idle
 PHP_FPM_PM_PAGES_MAX_CHILDREN=3 # the maximum number of threads
 PHP_FPM_PM_PAGES_MAX_REQUESTS=500 # Number of requests processed before restart (0 means no restart)
 PHP_FPM_PM_PAGES_MEMORY_LIMIT=128M # The maximum amount of request memory (the php default)
 # WWW Pool (Default, media)
-PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=2
-PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=3
+PHP_FPM_PM_WWW_MIN_SPARE_SERVERS=1
+PHP_FPM_PM_WWW_MAX_SPARE_SERVERS=1
 PHP_FPM_PM_WWW_MAX_CHILDREN=4
 PHP_FPM_PM_WWW_MAX_REQUESTS=500
 PHP_FPM_PM_WWW_MEMORY_LIMIT=384M # 384 and not 128 because of the taskrunner indexing 
@@ -780,7 +780,7 @@ The list of Docker images is available on [GitHub](https://github.com/ComboStrap
 
 ## How to contribute
 
-If you want to contribute to this image, check the [dev page](doc/dev.md)
+If you want to contribute to this image, check the [dev page](contrib/dev.md)
 that explains how to start the image to develop the script.
  
 

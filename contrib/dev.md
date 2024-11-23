@@ -6,11 +6,11 @@
 * Change the [Dockerfile](../Dockerfile)
 * Build
 ```bash
-dockenv build
+dock-x build
 ```
 * Push if satisfied
 ```bash
-dockenv push
+dock-x push
 ```
 
 
@@ -22,7 +22,7 @@ cd ~/code/dokuwiki-docker
 ```
 * Use the last build as some script need Dokuwiki scripts
 ```bash
-dockenv build
+dock-x build
 ```
 * Give execution permissions on your desktop to the scripts
 ```bash
@@ -37,7 +37,7 @@ dokuwiki-docker-run
 ```
 * Then connect with bash
 ```bash
-dockenv shell
+dock-x shell
 ```
 * Change 
   * the scripts and rerun them
