@@ -1,6 +1,10 @@
 # Dev Contribution
 
 
+## Entrypoint / Main
+
+The entrypoint is [dokuwiki-docker-entrypoint](../resources/dokuwiki-docker/bin/dokuwiki-docker-entrypoint)
+
 ## How to develop the Docker image
 
 * Change the [Dockerfile](../Dockerfile)
@@ -31,7 +35,7 @@ chmod +755 resources/dokuwiki-installer/bin/*
 chmod +755 resources/phpctl/bin/*
 chmod +755 resources/dokuctl/bin/*
 ```
-* Then run:
+* Then run [dokuwiki-docker-run](dokuwiki-docker-run):
 ```bash
 dokuwiki-docker-run
 ```
