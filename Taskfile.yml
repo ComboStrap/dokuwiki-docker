@@ -1,0 +1,15 @@
+version: '3'
+
+tasks:
+  # build the images
+  build:
+    cmds:
+      - |
+        DOCK_X_TAG=php8.3-latest dock-x build
+        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION} dock-x build
+  # push the images
+  push:
+    cmds:
+      - |
+        DOCK_X_TAG=php8.3-latest dock-x push
+        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION} dock-x push

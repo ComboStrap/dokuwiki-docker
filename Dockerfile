@@ -62,8 +62,9 @@ COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 # Why?
 # * This is the most stable piece of Dokuwiki
 # * If we run the image for script development, we don't need to download it
+# Version: https://download.dokuwiki.org/
 ####################################
-ENV DOKUWIKI_VERSION="2024-02-06b"
+ENV DOKUWIKI_VERSION="2025-05-14"
 # Where Dokuwiki is installed
 ENV DOKUWIKI_HOME='/var/www/html'
 RUN curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" \

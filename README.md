@@ -4,7 +4,6 @@
 ## About
 This repository contains the `Dokuwiki in Docker` image.
 
-
 Get a Dokuwiki installation with a website in a single line of command.
 
 ## Example: Starter Web Site
@@ -23,7 +22,7 @@ docker run \
 
 The table of content (TOC) is available on GitHub at the right corner of this document.
 
-![](doc/github_toc.png)
+![](contrib/github_toc.png)
 
 ## Features
 
@@ -118,8 +117,10 @@ with a new dokuwiki installation.
 
 ### Choose the installed dokuwiki version
 
-You can choose the initial [version](https://github.com/dokuwiki/dokuwiki/releases) 
-to install via the `DOKUWIKI_VERSION` environment.
+The latest image contains the dokuwiki version [DokuWiki 2025-05-14 "Librarian"](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14)
+
+But you can install any [version](https://github.com/dokuwiki/dokuwiki/releases)  via the `DOKUWIKI_VERSION` environment.
+
 
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
 ```bash
