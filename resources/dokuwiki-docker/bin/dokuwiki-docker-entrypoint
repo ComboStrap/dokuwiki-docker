@@ -102,6 +102,15 @@ if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
       echo_info "  * Version ${DOKUWIKI_VERSION} found in the image"
     fi
 
+    # Interwiki image does not have a user system
+    # they are overwritten on unzip or added
+    INTER_WIKI_ORIGINAL_DIR=lib/images/interwiki-dokuwiki-docker-original
+    if  [ -d "lib/images/interwiki/" ]; then
+      echo_info "Backup the Inter wiki images"
+      mkdir -p "$INTER_WIKI_ORIGINAL_DIR"
+      mv lib/images/interwiki/* "$INTER_WIKI_ORIGINAL_DIR"
+    fi
+
     # Unzip the archive
     # --no-same-owner option so that the files have root as owner
     echo_info "  * Unzipping version ${DOKUWIKI_VERSION} ..."
@@ -113,11 +122,14 @@ if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then
         rm "$DOKUWIKI_ARCHIVE_PATH"
     fi;
 
-    echo_info "Backup the installed Inter wiki images"
-    # Move the default Inter wiki images to not get them in Git
-    INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
-    mkdir -p $INTER_WIKI_BACKUP_DIR
-    mv lib/images/interwiki/* $INTER_WIKI_BACKUP_DIR
+    if [ -d "$INTER_WIKI_ORIGINAL_DIR" ]; then
+      echo_info "Restore the Inter wiki images"
+      # Move the default Inter wiki images to not get them in Git
+      INTER_WIKI_BACKUP_DIR=lib/images/interwiki-dokuwiki-docker-backup
+      mkdir -p "$INTER_WIKI_BACKUP_DIR"
+      mv lib/images/interwiki/* "$INTER_WIKI_BACKUP_DIR"
+      mv $INTER_WIKI_ORIGINAL_DIR/* lib/images/interwiki
+    fi
 
 else
 
