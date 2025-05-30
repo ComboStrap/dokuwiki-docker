@@ -117,12 +117,21 @@ with a new dokuwiki installation.
 
 ### Choose the installed dokuwiki version
 
-The latest image contains the dokuwiki version [DokuWiki 2025-05-14 "Librarian"](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14)
+The latest image contains the dokuwiki version [DokuWiki 2025-05-14a "Librarian"](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14a)
 
 But you can install any [version](https://github.com/dokuwiki/dokuwiki/releases)  via the `DOKUWIKI_VERSION` environment.
 
 
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
+* a [Prebuild version](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki)
+```bash
+docker run \
+  --name combo-site-starter \
+  --rm \
+  -p 8081:80 \
+  ghcr.io/combostrap/dokuwiki:php8.3-2024-02-06b
+```
+* any other (Dokuwiki is downloaded and installed)
 ```bash
 docker run \
   --name combo-site-starter \
@@ -131,6 +140,7 @@ docker run \
   -e DOKUWIKI_VERSION=2024-02-06b \
   ghcr.io/combostrap/dokuwiki:php8.3-latest
 ```
+
 
 ### Get Healthcheck / Liveness / Probes / Container State
 
