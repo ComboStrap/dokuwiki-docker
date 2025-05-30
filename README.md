@@ -122,7 +122,7 @@ The latest image contains the dokuwiki version [DokuWiki 2025-05-14a "Librarian"
 
 
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
-* a [Prebuild version](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki)
+* a [Prebuild version](#docker-image)
 ```bash
 docker run \
   --name combo-site-starter \
@@ -414,17 +414,6 @@ docker run \
 ```
 
 Note: You can change the `dokudata` value to whatever you want.
-
-### Update the Docker image
-
-We support for now only one tag by php version, therefore you need to delete the image before pulling it again
-
-Example for `php8.3`
-```bash
-docker rmi ghcr.io/combostrap/dokuwiki:php8.3-latest
-docker pull ghcr.io/combostrap/dokuwiki:php8.3-latest
-```
-
 
 
 ### How to disable the automatic update of the search index
@@ -762,15 +751,18 @@ Example of graph: the max and average request durations of https://combostrap.co
 
 ### Docker Tag
 
-We support for now only one tag by php version, therefore you need to [delete the image before pulling it again](#update-the-docker-image)
+The list of all available version can be found [here](https://github.com/ComboStrap/dokuwiki-docker/pkgs/container/dokuwiki)
 
 ```bash
-php8.3-latest
+php8.3-xxxx
 ```
 where:
 * `phpX.X` is the php version used
-* `latest` is the version of this image
-
+* `xxxxx` is the version of Dokuwiki
+  * `latest` is the latest pushed version
+  * [2025-05-14a](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14a)
+  * [2025-05-14](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14)
+  * [2024-02-06b](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
 
 Dokuwiki is installed if not found on the volume.
 See [how to choose the installed dokuwiki version](#choose-the-installed-dokuwiki-version)
