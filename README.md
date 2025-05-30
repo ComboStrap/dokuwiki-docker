@@ -119,7 +119,6 @@ with a new dokuwiki installation.
 
 The latest image contains the dokuwiki version [DokuWiki 2025-05-14a "Librarian"](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2025-05-14a)
 
-But you can install any [version](https://github.com/dokuwiki/dokuwiki/releases)  via the `DOKUWIKI_VERSION` environment.
 
 
 Example with the [2024-02-06b "Kaos" release](https://github.com/dokuwiki/dokuwiki/releases/tag/release-2024-02-06b)
@@ -131,7 +130,7 @@ docker run \
   -p 8081:80 \
   ghcr.io/combostrap/dokuwiki:php8.3-2024-02-06b
 ```
-* any other (Dokuwiki is downloaded and installed)
+* any other any [version](https://github.com/dokuwiki/dokuwiki/releases)  via the `DOKUWIKI_VERSION` environment. Dokuwiki is then downloaded and installed.
 ```bash
 docker run \
   --name combo-site-starter \
