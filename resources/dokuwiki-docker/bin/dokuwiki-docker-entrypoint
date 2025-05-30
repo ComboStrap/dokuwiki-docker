@@ -79,7 +79,7 @@ fi
 # Dokuwiki Install
 #############
 # https://www.dokuwiki.org/install
-export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-2025-05-14}
+export DOKUWIKI_VERSION=${DOKUWIKI_VERSION:-$DOKUWIKI_VERSION_BUILD}
 
 echo_info "DokuWiki Availability check (Home: $DOKUWIKI_HOME)"
 if [[ ! -f $DOKUWIKI_HOME/doku.php ]]; then

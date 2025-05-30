@@ -5,11 +5,11 @@ tasks:
   build:
     cmds:
       - |
-        DOCK_X_TAG=php8.3-latest dock-x build
-        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION} dock-x build
+        DOCK_X_TAG=php8.3-latest dock-x build --build-arg DOKUWIKI_VERSION_BUILD="${DOKUWIKI_VERSION_BUILD}" .
+        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION_BUILD} dock-x build --build-arg DOKUWIKI_VERSION_BUILD="${DOKUWIKI_VERSION_BUILD}" .
   # push the images
   push:
     cmds:
       - |
         DOCK_X_TAG=php8.3-latest dock-x push
-        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION} dock-x push
+        DOCK_X_TAG=php8.3-${DOKUWIKI_VERSION_BUILD} dock-x push

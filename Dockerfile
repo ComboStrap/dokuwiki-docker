@@ -13,6 +13,9 @@ RUN xcaddy build \
 # Dockerfile is at: https://github.com/docker-library/php/blob/master/8.3/bookworm/fpm/Dockerfile
 FROM php:8.3-fpm-bookworm
 
+# The build version
+ARG DOKUWIKI_VERSION_BUILD="2025-05-14a"
+
 ####################################
 # Package Installation
 ####################################
@@ -64,12 +67,12 @@ COPY --from=caddy-builder /usr/bin/caddy /usr/bin/caddy
 # * If we run the image for script development, we don't need to download it
 # Version: https://download.dokuwiki.org/
 ####################################
-ENV DOKUWIKI_VERSION="2025-05-14"
+ENV DOKUWIKI_VERSION_BUILD=${DOKUWIKI_VERSION_BUILD}
 # Where Dokuwiki is installed
 ENV DOKUWIKI_HOME='/var/www/html'
-RUN curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION}/dokuwiki-${DOKUWIKI_VERSION}.tgz" \
-    -o /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz \
-    && chmod 0777 /opt/dokuwiki-${DOKUWIKI_VERSION}.tgz
+RUN curl --fail -L "https://github.com/dokuwiki/dokuwiki/releases/download/release-${DOKUWIKI_VERSION_BUILD}/dokuwiki-${DOKUWIKI_VERSION_BUILD}.tgz" \
+    -o /opt/dokuwiki-${DOKUWIKI_VERSION_BUILD}.tgz \
+    && chmod 0777 /opt/dokuwiki-${DOKUWIKI_VERSION_BUILD}.tgz
 
 ####################################
 # Healthcheck
